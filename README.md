@@ -23,4 +23,4 @@ If you don't have one, you can set this to a blank value to use the other exampl
 
 ### Credits
 
-Logo created by [Bruce Wayyn](https://github.com/brucewayyn)
+Special thanks to https://github.com/brucewayyn
