@@ -10,7 +10,7 @@
 
 ---
 
-This library is functional, but I'm still experimenting with extra features to make advanced functionality easier to use. It also needs proper documentation. In the meantime, the [demo site](https://svelte-maplibre.vercel.app) includes code for all the examples, and is a good place to start.
+This library is functional, but I'm still experimenting with extra features to make advanced functionality easier to use. 
 
 ## Developing
 
@@ -23,4 +23,4 @@ If you don't have one, you can set this to a blank value to use the other exampl
 
 ### Credits
 
-Special thanks to https://github.com/brucewayyn
+Special thanks to https://github.com/dimfeld
