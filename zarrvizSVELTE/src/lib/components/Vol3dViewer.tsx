@@ -102,7 +102,7 @@ export default function Vol3dViewer(props) {
 
     const windowWidth = window.innerWidth;
     console.log(`Window width: ${windowWidth}px`);
-    
+
     const initScene = () => {
       console.log('initScene');
 
@@ -309,7 +309,7 @@ export default function Vol3dViewer(props) {
     console.log('update box material');
 
     boxMaterialRef.current.uniforms.volumeTex.value.dispose();
-    let volumeTexture = new THREE.DataTexture3D(volumeDataUint8, volumeSize[0], volumeSize[1], volumeSize[2]);
+    const volumeTexture = new THREE.DataTexture3D(volumeDataUint8, volumeSize[0], volumeSize[1], volumeSize[2]);
     volumeTexture.format = THREE.RedFormat
     volumeTexture.type = THREE.UnsignedByteType
     // Disabling mimpaps saves memory.

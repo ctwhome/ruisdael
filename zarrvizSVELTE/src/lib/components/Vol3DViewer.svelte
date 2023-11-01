@@ -4,35 +4,40 @@
 	import { getBoxSize } from '../utils/Utils';
 	import vertexShaderVolume from '../shaders/volume.vert';
 	import fragmentShaderVolume from '../shaders/volume.frag';
-	import { onDestroy, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 
-	// Props
-	export let volumeDataUint8;
-	export let volumeSize;
-	export let voxelSize;
-	export let transferFunctionTex;
-	// Vertical field of view
+	/// Props
+	export let volumeDataUint8: {
+		buffer: { byteLength: number };
+	};
+	export let volumeSize: number[];
+	export let voxelSize: number[];
+	export let dtScale: number = 1.0;
+	export let inScatFactor: number = 0.06;
+	export let qLScale: number = 0.00446;
+	export let gHG: number = 0.8;
+	export let dataEpsilon: number = 1e-5;
+	export let bottomColor: number[] = [0.0, 0.0005, 0.0033];
+	export let transferFunctionTex: { type: number };
 
-	export let dtScale: 1.0;
-	export let inScatFactor: 0.06;
-	export let qLScale: 0.00446;
-	export let gHG: 0.8;
-	export let dataEpsilon: 1e-5;
-	export let bottomColor: [0.0, 0.0005, 0.0033];
-	export let finalGamma: 4.5;
-	export let interactionSpeedup: 1;
-	export let cameraPosition: [0, 0, 2];
-	// Gives the correct orientation for Janelia FlyLight datasets
-	export let cameraUp: [0, 1, 0];
-	export let cameraFovDegrees: 45.0;
-	export let orbitZoomSpeed: 0.15;
-	export let onCameraChange: null;
-	export let onWebGLRender: null;
+	export let finalGamma: number = 4.5;
+	export let interactionSpeedup: number = 1;
+	export let cameraPosition: number[] = [0, 0, 2];
+	export let cameraUp: number[] = [0, 1, 0];
+	export let cameraFovDegrees: number = 45.0;
+	export let orbitZoomSpeed: number = 0.15;
+	export let onCameraChange: Function | null = null;
+	export let onWebGLRender: Function | null = null;
 
-	let mount;
-	let renderer, camera, trackball, scene, box, boxMaterial;
-	let prevHeight = window.innerHeight;
-
+	// Other variables and refs
+	let mount: HTMLElement;
+	let renderer: THREE.WebGLRenderer | null = null;
+	let camera: THREE.PerspectiveCamera | null = null;
+	let scene: THREE.Scene | null = null;
+	let box: THREE.Mesh | null = null;
+	let boxMaterial: THREE.Material | null = null;
+	let trackball: any = null; // OrbitUnlimitedControls doesn't have type definitions
+	let prevHeight: number | null = null;
 	const cameraNear = 0.01;
 	const cameraFar = 10.0;
 
@@ -51,7 +56,7 @@
 		console.log(`Window width: ${windowWidth}px`);
 
 		return () => {
-			// Cleanup logic, similar to componentWillUnmount
+			// Cleanup logic
 			mount.removeChild(renderer.domElement);
 			window.removeEventListener('resize', handleResize);
 		};
@@ -75,15 +80,15 @@
 		renderer.setPixelRatio(window.devicePixelRatio);
 
 		// Must be called after setPixelRatio().
-		const width = window.innerWidth || mountRef.current.clientWidth;
-		const height = window.innerWidth || 100 || mountRef.current.clientHeight;
+		const width = window.innerWidth || mount.clientWidth;
+		const height = window.innerWidth || 100 || mount.clientHeight;
 		renderer.setSize(width, height);
 
 		// The `clientHeight` does not seem to change when resizing to a shorter height.
 		// So keep track of the `innerHeight`, which does change, and use it for a correction.
-		prevHeightRef.current = window.innerHeight;
+		prevHeight = window.innerHeight;
 
-		mountRef.current.appendChild(renderer.domElement);
+		mount.appendChild(renderer.domElement);
 		return renderer;
 	}
 
@@ -144,8 +149,63 @@
 		scene.add(planeMesh);
 	}
 
-	function initMaterial() {
-		// ...
+	function initMaterial(renderer, box, boxSize, sunLight, hemisphereLight) {
+		const volumeTexture = new THREE.DataTexture3D(
+			volumeDataUint8,
+			volumeSize[0],
+			volumeSize[1],
+			volumeSize[2]
+		);
+		volumeTexture.format = THREE.RedFormat;
+		volumeTexture.type = THREE.UnsignedByteType;
+		// Disabling mimpaps saves memory.
+		volumeTexture.generateMipmaps = false;
+		// Linear filtering disables LODs, which do not help with volume rendering.
+		volumeTexture.minFilter = THREE.LinearFilter;
+		volumeTexture.magFilter = THREE.LinearFilter;
+		volumeTexture.needsUpdate = true;
+
+		const lightColor = sunLight.color;
+		const lightColorV = new THREE.Vector3(lightColor.r, lightColor.g, lightColor.b);
+		const ambientLightColorV = new THREE.Vector3(
+			hemisphereLight.color.r,
+			hemisphereLight.color.g,
+			hemisphereLight.color.b
+		);
+		//      const ambientLightColorV = new THREE.Vector3(0.3, 0.7, 0.98);
+
+		const boxMaterial = new THREE.ShaderMaterial({
+			vertexShader: vertexShaderVolume,
+			fragmentShader: fragmentShaderVolume,
+			side: THREE.BackSide,
+			transparent: true,
+			opacity: 1.0,
+			uniforms: {
+				boxSize: new THREE.Uniform(boxSize),
+				volumeTex: new THREE.Uniform(volumeTexture),
+				voxelSize: new THREE.Uniform(voxelSize),
+				sunLightDir: new THREE.Uniform(sunLight.position),
+				sunLightColor: new THREE.Uniform(lightColorV),
+				ambientLightColor: new THREE.Uniform(ambientLightColorV),
+				near: new THREE.Uniform(cameraNear),
+				far: new THREE.Uniform(cameraFar),
+				// The following are set separately, since they are based on `props` values that can
+				// change often, and should not trigger complete re-initialization.
+				transferTex: new THREE.Uniform(null),
+				dtScale: new THREE.Uniform(0),
+				inScatFactor: new THREE.Uniform(0),
+				qLScale: new THREE.Uniform(0),
+				gHG: new THREE.Uniform(0),
+				dataEpsilon: new THREE.Uniform(0),
+				bottomColor: new THREE.Uniform(new THREE.Vector3(0.0, 0.0005, 0.0033)),
+				finalGamma: new THREE.Uniform(0)
+			}
+		});
+
+		/* eslint no-param-reassign: ["error", { "props": false }] */
+		box.material = boxMaterial;
+
+		return [boxMaterial];
 	}
 
 	function updateOrbitUnlimitedControls() {
@@ -164,6 +224,7 @@
 </script>
 
 <div class="h-full w-screen">
+	asdf
 	{#if renderer}
 		<div bind:this={mount} />
 		<div class="camera-control">
