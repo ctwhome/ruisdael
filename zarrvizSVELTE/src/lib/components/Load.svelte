@@ -2,8 +2,9 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { openArray, HTTPStore, slice } from 'zarr';
 	import { Queue } from 'async-await-queue';
-	import { makeCloudTransferTex } from '../utils/makeCloudTransferTex';
-	import Vol3dViewer from './Volumetric3DViewer.svelte';
+	import { makeCloudTransferTex } from '$lib/utils/makeCloudTransferTex';
+	import Vol3dViewer from '$lib/components/3DVolumetric/Volumetric3DViewer.svelte';
+	import TimeLine from '$lib/components/TimeLine.svelte';
 
 	let zarrUrl = 'http://localhost:5173/data/ql.zarr';
 	let dataUint8 = null;
@@ -128,6 +129,7 @@
 			dtScale={0.1}
 			finalGamma={6.0}
 		/>
+		<TimeLine />
 		<!-- <Test volumeDataUint8={dataUint8} /> -->
 	{:else}
 		LOADING DATA

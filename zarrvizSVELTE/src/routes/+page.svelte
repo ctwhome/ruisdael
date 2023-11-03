@@ -4,6 +4,7 @@
 	import LoadZarrData from '$lib/components/LoadZarrData.svelte';
 	import Load from '$lib/components/Load.svelte';
 	import Three from '$lib/components/three.svelte';
+	import TimeLine from '$lib/components/TimeLine.svelte';
 </script>
 
 <h1 class="text-3xl font-bold underline">Welcome to Ruisdael Svelte</h1>
@@ -13,4 +14,4 @@
 <!-- <LoadZarrData /> -->
 <Load />
 
-```
+

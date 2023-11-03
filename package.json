@@ -44,6 +44,7 @@
   "types": "./dist/index.d.ts",
   "type": "module",
   "dependencies": {
+    "@types/three": "^0.158.1",
     "async-await-queue": "^2.1.4",
     "d3-geo": "^3.1.0",
     "just-compare": "^2.3.0",
