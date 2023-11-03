@@ -30,6 +30,8 @@
 	export let onWebGLRender: Function | null = null;
 
 	// Other variables and refs
+	let canvas;
+
 	let mount: HTMLElement;
 	let renderer: THREE.WebGLRenderer | null = null;
 	let camera: THREE.PerspectiveCamera | null = null;
@@ -43,8 +45,14 @@
 
 	onMount(() => {
 		// Similar to componentDidMount
-		initRenderer();
+		// initRenderer();
 		initScene();
+		const geometry = new THREE.BoxGeometry(1, 1, 1);
+		const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+		const cube = new THREE.Mesh(geometry, material);
+
+		scene.add(cube);
+
 		initMaterial();
 		updateOrbitUnlimitedControls();
 		checkWebGLSupport();
@@ -62,37 +70,52 @@
 		};
 	});
 
-	function initRenderer() {
-		console.log('initRenderer');
+	// function initRenderer() {
+	// 	console.log('initRenderer');
 
-		// Three.js now uses WebGL 2 by default, so no special canvas context is needed.
-		const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-		//renderer.setClearColor("#000000");
-		renderer.setClearAlpha(0);
+	// 	// Three.js now uses WebGL 2 by default, so no special canvas context is needed.
+	// 	const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+	// 	//renderer.setClearColor("#000000");
+	// 	renderer.setClearAlpha(0);
 
-		// For a shader using `gl_FragCoord`, as in this code (Shaders.js), the following
-		// use of `setPixelRatio` is not recommended in this guide:
-		// https://threejs.org/manual/#en/responsive
-		// On the other hand, the Three.js authors say the following use is correct:
-		// https://github.com/mrdoob/three.js/issues/12770
+	// 	// For a shader using `gl_FragCoord`, as in this code (Shaders.js), the following
+	// 	// use of `setPixelRatio` is not recommended in this guide:
+	// 	// https://threejs.org/manual/#en/responsive
+	// 	// On the other hand, the Three.js authors say the following use is correct:
+	// 	// https://github.com/mrdoob/three.js/issues/12770
 
-		// Eliminates some artifacts on MacBook Pros with Retina displays.
-		renderer.setPixelRatio(window.devicePixelRatio);
+	// 	// Eliminates some artifacts on MacBook Pros with Retina displays.
+	// 	renderer.setPixelRatio(window.devicePixelRatio);
 
-		// Must be called after setPixelRatio().
-		const width = window.innerWidth || mount.clientWidth;
-		const height = window.innerWidth || 100 || mount.clientHeight;
-		renderer.setSize(width, height);
+	// 	// Must be called after setPixelRatio().
+	// 	const width = window.innerWidth || mount.clientWidth;
+	// 	const height = window.innerWidth || 100 || mount.clientHeight;
+	// 	renderer.setSize(width, height);
 
-		// The `clientHeight` does not seem to change when resizing to a shorter height.
-		// So keep track of the `innerHeight`, which does change, and use it for a correction.
-		prevHeight = window.innerHeight;
+	// 	// The `clientHeight` does not seem to change when resizing to a shorter height.
+	// 	// So keep track of the `innerHeight`, which does change, and use it for a correction.
+	// 	prevHeight = window.innerHeight;
 
-		mount.appendChild(renderer.domElement);
-		return renderer;
-	}
+	// 	mount.appendChild(renderer.domElement);
+	// 	return renderer;
+	// }
 
 	function initScene() {
+		console.log('initRenderer');
+
+		const renderer = new THREE.WebGLRenderer({
+			canvas: canvas,
+			antialias: true,
+			alpha: true,
+			preserveDrawingBuffer: true,
+			depth: false,
+			stencil: false,
+			premultipliedAlpha: false,
+			powerPreference: 'high-performance',
+			devicePixelRatio: window.devicePixelRatio
+		});
+		renderer.setSize(window.innerWidth, window.innerHeight);
+
 		console.log('initScene');
 
 		const scene = new THREE.Scene();
@@ -220,22 +243,29 @@
 		// ...
 	}
 
-	// Other functions and reactive statements can go here
+	function setCameraView(position: number[], up: number[]) {
+		camera.position.set(...position);
+		camera.up.set(...up);
+		camera.lookAt(0, 0, 0);
+		// renderScene();
+	}
 </script>
 
-<div class="h-full w-screen">
-	asdf
-	{#if renderer}
-		<div bind:this={mount} />
-		<div class="camera-control">
-			<button class="btn" on:click={() => setCameraView([0, -2, 0], [0, 0, 1])} id="viewAbove">
-				View from Side
-			</button>
-			<button class="btn" on:click={() => setCameraView([0, 0, 2], [0, 1, 0])} id="viewFront">
-				View from Front
-			</button>
-		</div>
-	{:else}
-		<div>WebGL 2 is not supported in this browser.</div>
-	{/if}
-</div>
+<canvas class="w-full h-[400px]" bind:this={canvas} />
+
+<button class="btn" on:click={() => setCameraView([0, -2, 0], [0, 0, 1])} id="viewAbove">
+	View from Side
+</button>
+<button class="btn" on:click={() => setCameraView([0, 0, 2], [0, 1, 0])} id="viewFront">
+	View from Front
+</button>
+<!-- <div class="h-full w-screen"> -->
+<!-- {#if renderer} -->
+<!-- <div bind:this={mount} /> -->
+
+<!-- <div class="camera-control"> -->
+<!-- </div> -->
+<!-- {:else} -->
+<!-- <div>WebGL 2 is not supported in this browser.</div> -->
+<!-- {/if} -->
+<!-- </div> -->
