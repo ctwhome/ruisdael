@@ -3,8 +3,7 @@
 	import { openArray, HTTPStore, slice } from 'zarr';
 	import { Queue } from 'async-await-queue';
 	import { makeCloudTransferTex } from '../utils/makeCloudTransferTex';
-	import Vol3dViewer from './Vol3dViewer.svelte';
-	import Test from './Test.svelte';
+	import Vol3dViewer from './Volumetric3DViewer.svelte';
 
 	let zarrUrl = 'http://localhost:5173/data/ql.zarr';
 	let dataUint8 = null;
@@ -117,6 +116,8 @@
 	<!-- <pre>dataUint8 {JSON.stringify(dataUint8, null, 2)}</pre> -->
 	<pre>Slices downloaded: {JSON.stringify(allTimeSlices.length, null, 2)}</pre>
 
+	<!-- <Vol3dViewer /> -->
+
 	{#if dataUint8 && dataUint8.length !== 0 && dataCellSize.length !== 0}
 		<div>SHOW ME THE MONEY</div>
 		<Vol3dViewer
@@ -129,6 +130,7 @@
 		/>
 		<!-- <Test volumeDataUint8={dataUint8} /> -->
 	{:else}
-		LOADING DATA...
+		LOADING DATA
+		<progress class="progress w-56" />
 	{/if}
 </div>

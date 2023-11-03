@@ -6,6 +6,8 @@
 	import fragmentShaderVolume from '../shaders/volume.frag';
 	import { onMount } from 'svelte';
 
+	import { init3DScene } from './init3dScene';
+
 	/// Props
 	export let volumeDataUint8: {
 		buffer: { byteLength: number };
@@ -30,9 +32,14 @@
 	export let onWebGLRender: Function | null = null;
 
 	// Other variables and refs
+<<<<<<< HEAD:zarrvizSVELTE/src/lib/components/Vol3DViewer.svelte
 	let canvas;
 
 	let mount: HTMLElement;
+=======
+	let canvas: HTMLElement;
+
+>>>>>>> af17b9d55a0d5289a1e488b4d6cee8d12ca819e4:zarrvizSVELTE/src/lib/components/Volumetric3DViewer.svelte
 	let renderer: THREE.WebGLRenderer | null = null;
 	let camera: THREE.PerspectiveCamera | null = null;
 	let scene: THREE.Scene | null = null;
@@ -44,8 +51,10 @@
 	const cameraFar = 10.0;
 
 	onMount(() => {
+		init3DScene(canvas);
 		// Similar to componentDidMount
 		// initRenderer();
+<<<<<<< HEAD:zarrvizSVELTE/src/lib/components/Vol3DViewer.svelte
 		initScene();
 		const geometry = new THREE.BoxGeometry(1, 1, 1);
 		const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
@@ -57,16 +66,57 @@
 		updateOrbitUnlimitedControls();
 		checkWebGLSupport();
 		handleResize();
+=======
+		// initScene();
+>>>>>>> af17b9d55a0d5289a1e488b4d6cee8d12ca819e4:zarrvizSVELTE/src/lib/components/Volumetric3DViewer.svelte
 
-		window.innerWidth = 800; // sets the window width to 800 pixels
+		// renderer = new THREE.WebGLRenderer({
+		// 	canvas: canvas,
+		// 	antialias: true
+		// 	// alpha: true
+		// 	// preserveDrawingBuffer: true,
+		// 	// depth: false,
+		// 	// stencil: false,
+		// 	// premultipliedAlpha: false,
+		// 	// powerPreference: 'high-performance',
+		// 	// devicePixelRatio: window.devicePixelRatio
+		// });
 
-		const windowWidth = window.innerWidth;
-		console.log(`Window width: ${windowWidth}px`);
+		// console.log('initScene');
+
+		// const scene = new THREE.Scene();
+		// const camera = new THREE.PerspectiveCamera(
+		// 	75,
+		// 	window.innerWidth / window.innerHeight,
+		// 	0.1,
+		// 	1000
+		// );
+		// camera.position.z = 5;
+		// // renderer.setSize(window.innerWidth, window.innerHeight);
+		// renderer.setSize(window.innerWidth, 400);
+
+		// const geometry = new THREE.BoxGeometry(1, 1, 1);
+		// const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+		// const cube = new THREE.Mesh(geometry, material);
+
+		// scene.add(cube);
+
+		// CONTINUE HERE
+		// initMaterial();
+		// updateOrbitUnlimitedControls();
+		// checkWebGLSupport();
+		// handleResize();
+
+		// window.innerWidth = 800; // sets the window width to 800 pixels
+
+		// const windowWidth = window.innerWidth;
+		// console.log(`Window width: ${windowWidth}px`);
 
 		return () => {
 			// Cleanup logic
-			mount.removeChild(renderer.domElement);
-			window.removeEventListener('resize', handleResize);
+			// renderer.dispose();
+			// mount.removeChild(renderer.domElement);
+			// window.removeEventListener('resize', handleResize);
 		};
 	});
 
@@ -103,7 +153,11 @@
 	function initScene() {
 		console.log('initRenderer');
 
+<<<<<<< HEAD:zarrvizSVELTE/src/lib/components/Vol3DViewer.svelte
 		const renderer = new THREE.WebGLRenderer({
+=======
+		renderer = new THREE.WebGLRenderer({
+>>>>>>> af17b9d55a0d5289a1e488b4d6cee8d12ca819e4:zarrvizSVELTE/src/lib/components/Volumetric3DViewer.svelte
 			canvas: canvas,
 			antialias: true,
 			alpha: true,
@@ -251,7 +305,11 @@
 	}
 </script>
 
+<<<<<<< HEAD:zarrvizSVELTE/src/lib/components/Vol3DViewer.svelte
 <canvas class="w-full h-[400px]" bind:this={canvas} />
+=======
+<canvas class="w-full h-[400px] bg-red-500" bind:this={canvas} />
+>>>>>>> af17b9d55a0d5289a1e488b4d6cee8d12ca819e4:zarrvizSVELTE/src/lib/components/Volumetric3DViewer.svelte
 
 <button class="btn" on:click={() => setCameraView([0, -2, 0], [0, 0, 1])} id="viewAbove">
 	View from Side
