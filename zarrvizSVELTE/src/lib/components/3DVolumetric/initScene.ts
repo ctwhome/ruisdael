@@ -42,20 +42,8 @@ export function initScene(
 	camera = new THREE.PerspectiveCamera(cameraFovDegrees, size.x / size.y, cameraNear, cameraFar);
 	// const camera = new THREE.PerspectiveCamera(75, window.innerWidth / 400, 0.1, 1000);
 	camera.position.set(0, -2, 1.7);
-	// 	x
-	// :
-	// 0.05073209202821531
-	// y
-	// :
-	// -1.9344142051274407
-	// z
-	// :
-	// 1.7661907604671672
 	cameraControls = new CameraControls(camera, canvas);
 
-	const gridHelper = new THREE.GridHelper(50, 50);
-	gridHelper.position.y = -1;
-	scene.add(gridHelper);
 	// controls = new OrbitControls(camera, renderer.domElement);
 	// controls.zoomSpeed = 0.5;
 	// controls.update();
@@ -67,29 +55,12 @@ export function initScene(
 
 	camera.position.set(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
 	camera.up.set(cameraUp[0], cameraUp[1], cameraUp[2]);
-
-	// Calculate the camera position for a 45-degree angle
-	// const distance = 1;  // Adjust this value to position the camera closer or farther from the origin
-	// camera.position.set(distance, distance, distance);
-	// camera.lookAt(0, 0, 0);  // Adjust these values if your scene is centered at a different point
-
-	// const trackball = new OrbitUnlimitedControls(camera, renderer.domElement);
-	// trackball.zoomSpeed = orbitZoomSpeed;
-
-	// Match the modifier keys used by VVD_Viewer, as described in the FluoRender user manual:
-	// http://www.sci.utah.edu/releases/fluorender_v2.20/FluoRender2.20_Manual.pdf
-	// Appendix "C. Keyboard Shortcuts"
-	// trackball.usePanModAlt = true;
-	// trackball.usePanModCtrl = true;
-	// trackball.usePanModMeta = true;
-
-	// cameraRef.current = camera;
-	// trackballRef.current = trackball;
-
-	// A box in which the 3D volume texture will be rendered.  The box will be
-
-	// centered at the origin, with X in [-0.5, 0.5] so the width is 1, and
-	// Y (height) and Z (depth) scaled to match.
+	//
+	// Add a grid to the scene to help visualize camera movement.
+	//
+	const gridHelper = new THREE.GridHelper(50, 50);
+	gridHelper.position.y = -1;
+	scene.add(gridHelper);
 
 	const [boxWidth, boxHeight, boxDepth] = getBoxSize(volumeSize, voxelSize);
 	const boxSize = new THREE.Vector3(boxWidth, boxHeight, boxDepth);
@@ -109,11 +80,7 @@ export function initScene(
 	scene.add(sunLight);
 	const seaLightColor = new THREE.Color(0.0, 0.0005, 0.0033);
 	const toaLightColor = new THREE.Color(0.0, 0.0002, 0.033);
-	const hemisphereLight = new THREE.HemisphereLight(
-		seaLightColor.getHex(),
-		toaLightColor.getHex(),
-		1.0
-	);
+	const hemisphereLight = new THREE.HemisphereLight(seaLightColor.getHex(), toaLightColor.getHex(), 1.0);
 	scene.add(hemisphereLight);
 
 	//
