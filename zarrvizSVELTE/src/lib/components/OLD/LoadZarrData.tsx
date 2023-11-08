@@ -2,7 +2,7 @@ import { openArray, HTTPStore, slice } from 'zarr'
 import React, { useEffect, useState, useRef } from 'react';
 import { Queue } from 'async-await-queue';
 
-import { makeCloudTransferTex } from '../utils/makeCloudTransferTex';
+import { makeCloudTransferTex } from '../../utils/makeCloudTransferTex';
 import Vol3dViewer from './Vol3dViewer';
 
 
@@ -15,7 +15,7 @@ export default function LoadZarrData() {
   /**
    * Ref to an array containing all time slices.
    */
-  const allTimeSlices = useRef(new Array());  // 10 is the number of time slices TODO: make this dynamic
+  const allTimeSlices = useRef([]);  // 10 is the number of time slices TODO: make this dynamic
   const currentTimeIndex = useRef(0);           // the current time index default 0
 
 
@@ -61,17 +61,17 @@ export default function LoadZarrData() {
       const yvals = await zarryvals.getRaw([null]);
       const zvals = await zarrzvals.getRaw([null]);
 
-      let xvalues = xvals.data;
-      let dx = xvalues[1] - xvalues[0];
-      let yvalues = yvals.data;
-      let dy = yvalues[1] - yvalues[0];
-      let zvalues = zvals.data;
+      const xvalues = xvals.data;
+      const dx = xvalues[1] - xvalues[0];
+      const yvalues = yvals.data;
+      const dy = yvalues[1] - yvalues[0];
+      const zvalues = zvals.data;
       let sumDifferences = 0;
 
       for (let i = 1; i < zvalues.length; i++) {
         sumDifferences += Math.abs(zvalues[i] - zvalues[i - 1]);
       }
-      let dz = sumDifferences / (zvalues.length - 1);
+      const dz = sumDifferences / (zvalues.length - 1);
       console.log("I calculated ", dx, dy, dz);
       dataCellSize.current = [dx, dy, dz];
       dataShape.current = [shape[1], shape[2], shape[0]];

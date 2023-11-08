@@ -1,21 +1,18 @@
-// import { writable } from 'svelte/store';
 import * as THREE from 'three';
-// import TWEEN, { Tween } from '@tweenjs/tween.js';
 import CameraControls from 'camera-controls';
 
 import { getBoxSize } from '$lib/utils/Utils';
-// import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-
-import { addMap } from './addMap';
-
-// import OrbitUnlimitedControls from '@janelia/three-orbit-unlimited-controls';
+import { addPlainMap } from './addPlainMap';
 
 export const scene: THREE.Scene | null = new THREE.Scene();
 export let camera: THREE.PerspectiveCamera | null = null;
 export let renderer: THREE.WebGLRenderer | null = null;
+export let box: THREE.Mesh | null = null;
 // export const controls: OrbitControls | null = null;
 
 export let cameraControls: CameraControls | null = null;
+
+export let boxSize: THREE.Vector3 | null = null;
 
 const clock = new THREE.Clock();
 
@@ -63,25 +60,27 @@ export function initScene(
 	scene.add(gridHelper);
 
 	const [boxWidth, boxHeight, boxDepth] = getBoxSize(volumeSize, voxelSize);
-	const boxSize = new THREE.Vector3(boxWidth, boxHeight, boxDepth);
+	boxSize = new THREE.Vector3(boxWidth, boxHeight, boxDepth);
+	const boxGeometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
+
+	const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+	box = new THREE.Mesh(boxGeometry, material);
+	scene.add(box);
+
 	console.log(`Voxel size ${voxelSize[0]}, ${voxelSize[1]}, ${voxelSize[2]}`);
 	console.log(`Box size ${boxWidth}, ${boxHeight}, ${boxDepth}`);
 
-	const boxGeometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
-	const box = new THREE.Mesh(boxGeometry);
-	scene.add(box);
-
 	// Lights, to be used both during rendering the volume, and rendering the optional surface.
 
-	const sunLightDir = new THREE.Vector3(0.0, 0.5, 0.5);
-	const sunLightColor = new THREE.Color(0.99, 0.83, 0.62);
-	const sunLight = new THREE.DirectionalLight(sunLightColor.getHex(), 1.0);
-	sunLight.position.copy(sunLightDir);
-	scene.add(sunLight);
-	const seaLightColor = new THREE.Color(0.0, 0.0005, 0.0033);
-	const toaLightColor = new THREE.Color(0.0, 0.0002, 0.033);
-	const hemisphereLight = new THREE.HemisphereLight(seaLightColor.getHex(), toaLightColor.getHex(), 1.0);
-	scene.add(hemisphereLight);
+	// const sunLightDir = new THREE.Vector3(0.0, 0.5, 0.5);
+	// const sunLightColor = new THREE.Color(0.99, 0.83, 0.62);
+	// const sunLight = new THREE.DirectionalLight(sunLightColor.getHex(), 1.0);
+	// sunLight.position.copy(sunLightDir);
+	// scene.add(sunLight);
+	// const seaLightColor = new THREE.Color(0.0, 0.0005, 0.0033);
+	// const toaLightColor = new THREE.Color(0.0, 0.0002, 0.033);
+	// const hemisphereLight = new THREE.HemisphereLight(seaLightColor.getHex(), toaLightColor.getHex(), 1.0);
+	// scene.add(hemisphereLight);
 
 	//
 	// Add an axes helper to the scene to help with debugging.
@@ -92,33 +91,33 @@ export function initScene(
 	//
 	// Add textured map to the scene
 	//
-	addMap(boxWidth, boxHeight, boxDepth);
+	addPlainMap(boxWidth, boxHeight, boxDepth);
 }
 
-export function setCameraView(position: number[], up: number[]) {
-	animate();
-	camera.position.set(...position);
-	camera.up.set(...up);
-	camera.lookAt(0, 0, 0);
-	//  renderScene();
+// export function setCameraView(position: number[], up: number[]) {
+// 	animate();
+// 	camera.position.set(...position);
+// 	camera.up.set(...up);
+// 	camera.lookAt(0, 0, 0);
+// 	//  renderScene();
 
-	// const duration = 1000; // Duration of the animation in milliseconds
+// 	// const duration = 1000; // Duration of the animation in milliseconds
 
-	// // new Tween(camera.position)
-	// // 	.to({ x: position[0], y: position[1], z: position[2] }, duration)
-	// // 	.start();
+// 	// // new Tween(camera.position)
+// 	// // 	.to({ x: position[0], y: position[1], z: position[2] }, duration)
+// 	// // 	.start();
 
-	// new Tween(camera.position)
-	// 	.to({ x: position[0], y: position[1], z: position[2] }, duration)
-	// 	.onUpdate(() => camera.lookAt(lookAt[0], lookAt[1], lookAt[2]))
-	// 	.start();
+// 	// new Tween(camera.position)
+// 	// 	.to({ x: position[0], y: position[1], z: position[2] }, duration)
+// 	// 	.onUpdate(() => camera.lookAt(lookAt[0], lookAt[1], lookAt[2]))
+// 	// 	.start();
 
-	// animate();
-}
+// 	// animate();
+// }
 
-function animate(time?: number) {
+function animate() {
 	const delta = clock.getDelta();
-	const elapsed = clock.getElapsedTime();
+	// const elapsed = clock.getElapsedTime();
 	const updated = cameraControls.update(delta);
 
 	// if ( elapsed > 30 ) { return; }
