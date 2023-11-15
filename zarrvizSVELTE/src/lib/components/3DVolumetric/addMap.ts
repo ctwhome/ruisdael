@@ -1,7 +1,8 @@
 import * as THREE from 'three';
+
 import { scene } from './initScene';
 
-export function addPlainMap(boxWidth: number, boxHeight: number, boxDepth: number) {
+export function addMap(boxWidth: number, boxHeight: number, boxDepth: number) {
 	//
 	// Adding the plane mesh to the scene to hold the Map texture
 	//
