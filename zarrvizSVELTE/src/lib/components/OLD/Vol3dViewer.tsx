@@ -8,7 +8,7 @@ import React, { useRef, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import * as THREE from 'three';
 import OrbitUnlimitedControls from '@janelia/three-orbit-unlimited-controls';
-import { getBoxSize } from '../utils/Utils';
+import { getBoxSize } from '../../utils/Utils';
 
 // import { vertexShaderVolume, fragmentShaderVolume } from './Shaders';
 import vertexShaderVolume from '../shaders/volume.vert';

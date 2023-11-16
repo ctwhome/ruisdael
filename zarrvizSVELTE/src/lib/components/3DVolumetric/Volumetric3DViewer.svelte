@@ -7,13 +7,14 @@
 	import { afterUpdate, onMount } from 'svelte';
 
 	import { initScene, camera, renderer, setCameraView, cameraControls } from './initScene';
+	import { addPlainMap } from './addPlainMap';
 
 	/// Props
 	export let volumeDataUint8: {
 		buffer: { byteLength: number };
 	};
-	export let volumeSize: number[];
-	export let voxelSize: number[];
+	export let volumeSize: number[] ;
+	export let voxelSize: number[] = [100, 100, 37.46];
 	export let dtScale: number = 1.0;
 	export let inScatFactor: number = 0.06;
 	export let qLScale: number = 0.00446;
@@ -48,21 +49,27 @@
 	// 	console.log('volumeDataUint8', camera?.position);
 	// }
 
+
+
 	// TODO: CONTINUE:how to print the values of camera, etc etc etc... reactively in svelte
 	// A reactive statement that updates whenever the camera position changes
 	// afterUpdate(() => {
 	// 	console.log(`Camera position: x: ${camera.position.x}, y: ${camera.position.y}, z: ${camera.position.z}`);
 	// });
 	onMount(() => {
-		initScene(canvas, volumeSize, voxelSize, cameraPosition, cameraUp, cameraFovDegrees, cameraNear, cameraFar);
+		initScene(canvas, volumeSize, voxelSize, cameraPosition, cameraUp, cameraFovDegrees, cameraNear, cameraFar, volumeDataUint8);
 
-		camera.addEventListener('onchange' as any, () => {
-			console.log('Camera changed');
-			// Do something when the camera changes
-		});
+		addPlainMap()
+
+
 
 		// CONTINUE HERE
-		// initMaterial();
+
+		///////////////////
+		// addCloud Data
+		///////////////////
+
+		// initMaterial( renderer, box, boxSize, sunLight, hemisphereLight );
 		// updateOrbitUnlimitedControls();
 		// checkWebGLSupport();
 		// handleResize();
@@ -80,59 +87,7 @@
 		};
 	});
 
-	function initMaterial(renderer, box, boxSize, sunLight, hemisphereLight) {
-		const volumeTexture = new THREE.DataTexture3D(volumeDataUint8, volumeSize[0], volumeSize[1], volumeSize[2]);
-		volumeTexture.format = THREE.RedFormat;
-		volumeTexture.type = THREE.UnsignedByteType;
-		// Disabling mimpaps saves memory.
-		volumeTexture.generateMipmaps = false;
-		// Linear filtering disables LODs, which do not help with volume rendering.
-		volumeTexture.minFilter = THREE.LinearFilter;
-		volumeTexture.magFilter = THREE.LinearFilter;
-		volumeTexture.needsUpdate = true;
 
-		const lightColor = sunLight.color;
-		const lightColorV = new THREE.Vector3(lightColor.r, lightColor.g, lightColor.b);
-		const ambientLightColorV = new THREE.Vector3(
-			hemisphereLight.color.r,
-			hemisphereLight.color.g,
-			hemisphereLight.color.b
-		);
-		//      const ambientLightColorV = new THREE.Vector3(0.3, 0.7, 0.98);
-
-		const boxMaterial = new THREE.ShaderMaterial({
-			vertexShader: vertexShaderVolume,
-			fragmentShader: fragmentShaderVolume,
-			side: THREE.BackSide,
-			transparent: true,
-			opacity: 1.0,
-			uniforms: {
-				boxSize: new THREE.Uniform(boxSize),
-				volumeTex: new THREE.Uniform(volumeTexture),
-				voxelSize: new THREE.Uniform(voxelSize),
-				sunLightDir: new THREE.Uniform(sunLight.position),
-				sunLightColor: new THREE.Uniform(lightColorV),
-				ambientLightColor: new THREE.Uniform(ambientLightColorV),
-				near: new THREE.Uniform(cameraNear),
-				far: new THREE.Uniform(cameraFar),
-				// The following are set separately, since they are based on `props` values that can
-				// change often, and should not trigger complete re-initialization.
-				transferTex: new THREE.Uniform(null),
-				dtScale: new THREE.Uniform(0),
-				inScatFactor: new THREE.Uniform(0),
-				qLScale: new THREE.Uniform(0),
-				gHG: new THREE.Uniform(0),
-				dataEpsilon: new THREE.Uniform(0),
-				bottomColor: new THREE.Uniform(new THREE.Vector3(0.0, 0.0005, 0.0033)),
-				finalGamma: new THREE.Uniform(0)
-			}
-		});
-
-		/* eslint no-param-reassign: ["error", { "props": false }] */
-		box.material = boxMaterial;
-
-		return [boxMaterial];
-	}
 </script>
 
 <canvas class="w-full h-[400px]" bind:this={canvas} />
