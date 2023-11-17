@@ -2,7 +2,7 @@
 	import { openArray, HTTPStore, slice } from 'zarr';
 	import { Queue } from 'async-await-queue';
 	import { makeCloudTransferTex } from '$lib/utils/makeCloudTransferTex';
-	import Vol3dViewer from './3DVolumetric/Volumetric3DViewer.svelte';
+	import Vol3dViewer from '../3DVolumetric/Volumetric3DViewer.svelte';
 	import { onDestroy, onMount } from 'svelte';
 
 	let zarrUrl = 'http://localhost:5173/data/ql.zarr';

@@ -9,7 +9,7 @@ import { getBoxSize } from '$lib/utils/Utils';
 import fragmentShaderVolume from '$lib/shaders/simple.frag';
 import vertexShaderVolume from '$lib/shaders/volume.vert';
 
-import { addPlainMap } from './addPlainMap';
+// import { addPlainMap } from './addPlainMap';
 
 // import OrbitUnlimitedControls from '@janelia/three-orbit-unlimited-controls';
 
@@ -25,7 +25,7 @@ const clock = new THREE.Clock();
 CameraControls.install({ THREE: THREE });
 
 
-function initMaterial(renderer, box, boxSize, sunLight, hemisphereLight,volumeDataUint8, volumeSize, voxelSize, cameraNear, cameraFar) {
+function initMaterial(renderer, box, boxSize, sunLight, hemisphereLight, volumeDataUint8, volumeSize, voxelSize, cameraNear, cameraFar) {
 	const volumeTexture = new THREE.Data3DTexture(volumeDataUint8, volumeSize[0], volumeSize[1], volumeSize[2]);
 	volumeTexture.format = THREE.RedFormat;
 	volumeTexture.type = THREE.UnsignedByteType;
@@ -73,6 +73,7 @@ function initMaterial(renderer, box, boxSize, sunLight, hemisphereLight,volumeDa
 		}
 	});
 
+
 	/* eslint no-param-reassign: ["error", { "props": false }] */
 	box.material = boxMaterial;
 
@@ -114,6 +115,7 @@ export function initScene(
 
 	camera.position.set(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
 	camera.up.set(cameraUp[0], cameraUp[1], cameraUp[2]);
+
 	//
 	// Add a grid to the scene to help visualize camera movement.
 	//
@@ -122,16 +124,14 @@ export function initScene(
 	scene.add(gridHelper);
 
 
-
-	const [boxWidth = 1, boxHeight=1 , boxDepth=0.3] = getBoxSize(volumeSize, voxelSize);
-	const boxSize = new THREE.Vector3(boxWidth, boxHeight, boxDepth);
+	const [boxWidth = 1, boxHeight = 1, boxDepth = 0.3] = getBoxSize(volumeSize, voxelSize);
+	// const boxSize = new THREE.Vector3(boxWidth, boxHeight, boxDepth);
 	console.log(`Voxel size ${voxelSize[0]}, ${voxelSize[1]}, ${voxelSize[2]}`);
 	console.log(`Box size ${boxWidth}, ${boxHeight}, ${boxDepth}`);
 
 	const boxGeometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
 	const box = new THREE.Mesh(boxGeometry);
 	scene.add(box);
-
 
 	// Lights, to be used both during rendering the volume, and rendering the optional surface.
 	const sunLightDir = new THREE.Vector3(0.0, 0.5, 0.5);
@@ -150,8 +150,12 @@ export function initScene(
 	const axesHelper = new THREE.AxesHelper(5);
 	scene.add(axesHelper);
 
-
-	initMaterial(renderer, box, boxSize, sunLight, hemisphereLight, volumeDataUint8, volumeSize, voxelSize, cameraNear, cameraFar);
+	//
+	//
+	// CONTUNUE HERE
+	//
+	//
+	// initMaterial(renderer, box, boxSize, sunLight, hemisphereLight, volumeDataUint8, volumeSize, voxelSize, cameraNear, cameraFar);
 }
 
 export function setCameraView(position: number[], up: number[]) {
@@ -162,9 +166,11 @@ export function setCameraView(position: number[], up: number[]) {
 
 }
 
-function animate(time?: number) {
+function animate(
+	//time?: number
+) {
 	const delta = clock.getDelta();
-	const elapsed = clock.getElapsedTime();
+	// const elapsed = clock.getElapsedTime();
 	const updated = cameraControls.update(delta);
 
 	// if ( elapsed > 30 ) { return; }

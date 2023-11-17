@@ -13,7 +13,7 @@
 	export let volumeDataUint8: {
 		buffer: { byteLength: number };
 	};
-	export let volumeSize: number[] ;
+	export let volumeSize: number[];
 	export let voxelSize: number[] = [100, 100, 37.46];
 	export let dtScale: number = 1.0;
 	export let inScatFactor: number = 0.06;
@@ -49,19 +49,26 @@
 	// 	console.log('volumeDataUint8', camera?.position);
 	// }
 
-
-
 	// TODO: CONTINUE:how to print the values of camera, etc etc etc... reactively in svelte
 	// A reactive statement that updates whenever the camera position changes
 	// afterUpdate(() => {
 	// 	console.log(`Camera position: x: ${camera.position.x}, y: ${camera.position.y}, z: ${camera.position.z}`);
 	// });
+
 	onMount(() => {
-		initScene(canvas, volumeSize, voxelSize, cameraPosition, cameraUp, cameraFovDegrees, cameraNear, cameraFar, volumeDataUint8);
+		initScene(
+			canvas,
+			volumeSize,
+			voxelSize,
+			cameraPosition,
+			cameraUp,
+			cameraFovDegrees,
+			cameraNear,
+			cameraFar,
+			volumeDataUint8
+		);
 
-		addPlainMap()
-
-
+		addPlainMap();
 
 		// CONTINUE HERE
 
@@ -86,8 +93,6 @@
 			// window.removeEventListener('resize', handleResize);
 		};
 	});
-
-
 </script>
 
 <canvas class="w-full h-[400px]" bind:this={canvas} />

@@ -3,7 +3,7 @@ import { openArray, HTTPStore, slice } from 'zarr';
 import { Queue } from 'async-await-queue';
 
 export let dataShape = [];
-export let dataCellSize = [];
+export const dataCellSize = writable([]);
 export const allTimeSlices = writable([]);
 
 /**
@@ -17,9 +17,9 @@ export async function fetchData(url: string, path: string, timeIndex: number) {
 	// If the data has already been fetched, return.
 
 	// check if allTimeSlices[timeIndex] is already in the store
+	// important during the loop
 	if (get(allTimeSlices)[timeIndex]) {
 		console.log('🔥 RETURN');
-
 		return;
 	}
 
@@ -44,7 +44,7 @@ export async function fetchData(url: string, path: string, timeIndex: number) {
 		timeSlices[timeIndex] = data;
 		return timeSlices;
 	});
-	// console.log('🎹 allTimeSlices', get(allTimeSlices)[timeIndex]);
+	console.log('🎹 allTimeSlices', get(allTimeSlices)[timeIndex]);
 
 	// If this is the first time slice, calculate the cell size and shape
 	if (timeIndex === 0) {
@@ -67,7 +67,7 @@ export async function fetchData(url: string, path: string, timeIndex: number) {
 		}
 		const dz = sumDifferences / (zvalues.length - 1);
 		console.log('I calculated ', dx, dy, dz);
-		dataCellSize = [dx, dy, dz];
+		dataCellSize.update(() => [dx, dy, dz]);
 		dataShape = [shape[1], shape[2], shape[0]];
 	}
 }
