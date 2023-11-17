@@ -45,7 +45,7 @@
 		allTimeSlices.subscribe((val) => {
 			console.log('---------allTimeSlices', val);
 			console.log('🎹---------- allTimeSlices.subscribe.length', get(allTimeSlices).length);
-			// dataUint8 = get(allTimeSlices)[currentTimeIndex];
+			dataUint8 = get(allTimeSlices)[currentTimeIndex];
 		});
 	});
 
@@ -56,10 +56,11 @@
 
 <div class="">
 	<!-- <pre>Slices downloaded: {@JSON.stringify(allTimeSlices.length, null, 2)}</pre> -->
-	<pre>dataUint8 {dataUint8?.length}</pre>
-	<pre>dataCellSize {$dataCellSize.length}</pre>
-	<pre>Slices downloaded: {JSON.stringify($allTimeSlices.length, null, 2)}</pre>
-	currentTimeIndex: {currentTimeIndex}
+	<div class="flex gap-5">
+		<pre>dataUint8 {dataUint8?.length} |</pre>
+		<pre>dataCellSize: {$dataCellSize.length} |</pre>
+		<pre>Slices downloaded: {JSON.stringify($allTimeSlices.length, null, 2)} |</pre>
+	</div>
 	<!-- <Vol3dViewer /> -->
 	{#if dataUint8?.length !== 0 && $dataCellSize.length !== 0}
 		<!-- <Test volumeDataUint8={dataUint8} /> -->
@@ -72,8 +73,10 @@
 			finalGamma={6.0}
 		/>
 	{:else}
-		LOADING DATA
-		<progress class="progress w-56" />
+		<div>
+			LOADING DATA
+			<progress class="progress w-56" />
+		</div>
 	{/if}
 </div>
 
@@ -85,5 +88,7 @@ Play Speed in miliseconds:
 	value={playSpeedInMiliseconds}
 	step="500"
 	min="500"
+	class="w-20"
 	on:input={(event) => (playSpeedInMiliseconds = parseInt(event?.target?.value))}
 />
+currentTimeIndex: {currentTimeIndex}
