@@ -35,6 +35,7 @@
 			max={length}
 			step="1"
 			value={positionIndex}
+			on:input={(event) => console.log('🎹 ', event?.target?.value)}
 		/>
 
 		<div class="w-full flex justify-between text-xs px-2">
