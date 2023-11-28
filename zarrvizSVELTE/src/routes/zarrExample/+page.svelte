@@ -36,6 +36,8 @@
 	const toaLightColor = new THREE.Color(0.0, 0.0002, 0.033);
 	const hemisphereLight = new THREE.HemisphereLight(seaLightColor.getHex(), toaLightColor.getHex(), 1.0);
 
+	const finalGamma = 6.0;
+
 	let materialRef: THREE.ShaderMaterial | null = null;
 
 	async function create3DScene() {
@@ -61,7 +63,7 @@
 		const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
 		const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
 		cube.position.set(-1, 0, 0); // Set the position of the cube
-		// scene.add(cube); // Add the cube to the scene
+		scene.add(cube); // Add the cube to the scene
 
 		//
 		// Add an axes helper to the scene to help with debugging.
@@ -79,7 +81,7 @@
 		// Add a plane with the Map to the scene
 		//
 		const planeMesh = createPlaneMesh({ width: 100, height: 100, depth: 37.46699284324961 });
-		scene.add(planeMesh);
+		// scene.add(planeMesh);
 
 		//
 		// Lights, to be used both during rendering the volume, and rendering the optional surface.
@@ -100,59 +102,128 @@
 			renderer.render(scene, camera);
 		}
 		animate();
+		console.log('🔋 3d scene created');
 	}
 
-	function initMaterial({ dataUint8, volumeSize, boxSize }) {
-		const volumeTexture = new THREE.DataTexture3D(dataUint8, volumeSize[0], volumeSize[1], volumeSize[2]);
-		volumeTexture.format = THREE.RedFormat;
-		volumeTexture.type = THREE.UnsignedByteType;
-		// Disabling mimpaps saves memory.
-		volumeTexture.generateMipmaps = false;
-		// Linear filtering disables LODs, which do not help with volume rendering.
-		volumeTexture.minFilter = THREE.LinearFilter;
-		volumeTexture.magFilter = THREE.LinearFilter;
-		volumeTexture.needsUpdate = true;
+	function initMaterial({ renderer, dataUint8, box, boxSize }) {
+		return new Promise((resolve, reject) => {
+			console.log('🎹dataUint8 ', dataUint8);
 
-		const lightColor = sunLight.color;
-		const lightColorV = new THREE.Vector3(lightColor.r, lightColor.g, lightColor.b);
-		//  const ambientLightColorV = new THREE.Vector3(0.3, 0.7, 0.98);
-		const ambientLightColorV = new THREE.Vector3(
-			hemisphereLight.color.r,
-			hemisphereLight.color.g,
-			hemisphereLight.color.b
-		);
+			const volumeTexture = new THREE.Data3DTexture(dataUint8, volumeSize[0], volumeSize[1], volumeSize[2]);
+			volumeTexture.format = THREE.RedFormat;
+			volumeTexture.type = THREE.UnsignedByteType;
+			// Disabling mimpaps saves memory.
+			volumeTexture.generateMipmaps = false;
+			// Linear filtering disables LODs, which do not help with volume rendering.
+			volumeTexture.minFilter = THREE.LinearFilter;
+			volumeTexture.magFilter = THREE.LinearFilter;
+			volumeTexture.needsUpdate = true;
 
-		const boxMaterial = new THREE.ShaderMaterial({
-			vertexShader: vertexShaderVolume,
-			fragmentShader: fragmentShaderVolume,
-			side: THREE.BackSide,
-			transparent: true,
-			opacity: 1.0,
-			uniforms: {
-				boxSize: new THREE.Uniform(boxSize),
-				volumeTex: new THREE.Uniform(volumeTexture),
-				voxelSize: new THREE.Uniform(voxelSize),
-				sunLightDir: new THREE.Uniform(sunLight.position),
-				sunLightColor: new THREE.Uniform(lightColorV),
-				ambientLightColor: new THREE.Uniform(ambientLightColorV),
-				near: new THREE.Uniform(cameraNear),
-				far: new THREE.Uniform(cameraFar),
-				// The following are set separately, since they are based on `props` values that can
-				// change often, and should not trigger complete re-initialization.
-				transferTex: new THREE.Uniform(null),
-				dtScale: new THREE.Uniform(0),
-				inScatFactor: new THREE.Uniform(0),
-				qLScale: new THREE.Uniform(0),
-				gHG: new THREE.Uniform(0),
-				dataEpsilon: new THREE.Uniform(0),
-				bottomColor: new THREE.Uniform(new THREE.Vector3(0.0, 0.0005, 0.0033)),
-				finalGamma: new THREE.Uniform(0)
-			}
+			const lightColor = sunLight.color;
+			const lightColorV = new THREE.Vector3(lightColor.r, lightColor.g, lightColor.b);
+			const ambientLightColorV = new THREE.Vector3(
+				hemisphereLight.color.r,
+				hemisphereLight.color.g,
+				hemisphereLight.color.b
+			);
+			//      const ambientLightColorV = new THREE.Vector3(0.3, 0.7, 0.98);
+
+			const boxMaterial = new THREE.ShaderMaterial({
+				vertexShader: vertexShaderVolume,
+				fragmentShader: fragmentShaderVolume,
+				side: THREE.BackSide,
+				transparent: true,
+				opacity: 1.0,
+				uniforms: {
+					boxSize: new THREE.Uniform(boxSize),
+					volumeTex: new THREE.Uniform(volumeTexture),
+					voxelSize: new THREE.Uniform(voxelSize),
+					sunLightDir: new THREE.Uniform(sunLight.position),
+					sunLightColor: new THREE.Uniform(lightColorV),
+					ambientLightColor: new THREE.Uniform(ambientLightColorV),
+					near: new THREE.Uniform(cameraNear),
+					far: new THREE.Uniform(cameraFar),
+					// The following are set separately, since they are based on `props` values that can
+					// change often, and should not trigger complete re-initialization.
+					transferTex: new THREE.Uniform(null),
+					dtScale: new THREE.Uniform(0),
+					inScatFactor: new THREE.Uniform(0),
+					qLScale: new THREE.Uniform(0),
+					gHG: new THREE.Uniform(0),
+					dataEpsilon: new THREE.Uniform(0),
+					bottomColor: new THREE.Uniform(new THREE.Vector3(0.0, 0.0005, 0.0033)),
+					finalGamma: new THREE.Uniform(0)
+				}
+			});
+			// Initial render to display the scene.
+			renderScene();
+
+			/* eslint no-param-reassign: ["error", { "props": false }] */
+			// box.material = boxMaterial;
+
+			// return [boxMaterial];
+			console.log('🔋 init material');
+			resolve(boxMaterial);
 		});
-
-		/* eslint no-param-reassign: ["error", { "props": false }] */
-		return boxMaterial;
 	}
+
+	// Render the scene. This function can be reused in other effects or callbacks.
+	function renderScene() {
+		renderer.render(scene, camera);
+		console.log('🔥 rendered');
+	}
+	// function initMaterial({ dataUint8, volumeSize, boxSize }) {
+	// 	const volumeTexture = new THREE.Data3DTexture(dataUint8, volumeSize[0], volumeSize[1], volumeSize[2]);
+	// 	// const volumeTexture = new THREE.Data3DTexture(dataUint8, volumeSize[0], volumeSize[1], volumeSize[2]);
+	// 	volumeTexture.format = THREE.RedFormat;
+	// 	volumeTexture.type = THREE.UnsignedByteType;
+	// 	// Disabling mimpaps saves memory.
+	// 	volumeTexture.generateMipmaps = false;
+	// 	// Linear filtering disables LODs, which do not help with volume rendering.
+	// 	volumeTexture.minFilter = THREE.LinearFilter;
+	// 	volumeTexture.magFilter = THREE.LinearFilter;
+	// 	volumeTexture.needsUpdate = true;
+
+	// 	const lightColor = sunLight.color;
+	// 	const lightColorV = new THREE.Vector3(lightColor.r, lightColor.g, lightColor.b);
+	// 	//  const ambientLightColorV = new THREE.Vector3(0.3, 0.7, 0.98);
+	// 	const ambientLightColorV = new THREE.Vector3(
+	// 		hemisphereLight.color.r,
+	// 		hemisphereLight.color.g,
+	// 		hemisphereLight.color.b
+	// 	);
+
+	// 	const boxMaterial = new THREE.ShaderMaterial({
+	// 		vertexShader: vertexShaderVolume,
+	// 		fragmentShader: fragmentShaderVolume,
+	// 		side: THREE.BackSide,
+	// 		transparent: true,
+	// 		opacity: 1.0,
+	// 		uniforms: {
+	// 			boxSize: new THREE.Uniform(boxSize),
+	// 			volumeTex: new THREE.Uniform(volumeTexture),
+	// 			voxelSize: new THREE.Uniform(voxelSize),
+	// 			sunLightDir: new THREE.Uniform(sunLight.position),
+	// 			sunLightColor: new THREE.Uniform(lightColorV),
+	// 			ambientLightColor: new THREE.Uniform(ambientLightColorV),
+	// 			near: new THREE.Uniform(cameraNear),
+	// 			far: new THREE.Uniform(cameraFar),
+	// 			// The following are set separately, since they are based on `props` values that can
+	// 			// change often, and should not trigger complete re-initialization.
+	// 			transferTex: new THREE.Uniform(null),
+	// 			dtScale: new THREE.Uniform(0),
+	// 			inScatFactor: new THREE.Uniform(0),
+	// 			qLScale: new THREE.Uniform(0),
+	// 			gHG: new THREE.Uniform(0),
+	// 			dataEpsilon: new THREE.Uniform(0),
+	// 			bottomColor: new THREE.Uniform(new THREE.Vector3(0.0, 0.0005, 0.0033)),
+	// 			finalGamma: new THREE.Uniform(0)
+	// 		}
+	// 	});
+
+	// 	/* eslint no-param-reassign: ["error", { "props": false }] */
+	// 	return boxMaterial;
+	// }
 
 	// TODO: CONTINUE HERE
 	// This `useEffect` follows the first React rendering, so it is necessary to
@@ -161,6 +232,7 @@
 	// renderScene();
 	// }, [dtScale, inScatFactor, finalGamma, renderScene, transferFunctionTex]);
 
+	let boxSize = new THREE.Vector3(1, 1, 1);
 	let dtScale: number = 1.0;
 	let inScatFactor: number = 0.06;
 	let qLScale: number = 0.00446;
@@ -168,13 +240,14 @@
 	let dataEpsilon: number = 1e-5;
 	let bottomColor: number[] = [0.0, 0.0005, 0.0033];
 
-	let boxSize: THREE.Vector3 = new THREE.Vector3(1, 1, 1);
+	// let boxSize: THREE.Vector3 = new THREE.Vector3(1, 1, 1);
 
 	function updateMaterial({ dataUint8, volumeSize }) {
 		console.log('update box material');
 
 		materialRef.uniforms.volumeTex.value.dispose();
-		const volumeTexture = new THREE.DataTexture3D(dataUint8, volumeSize[0], volumeSize[1], volumeSize[2]);
+		// const volumeTexture = new THREE.DataTexture3D(dataUint8, volumeSize[0], volumeSize[1], volumeSize[2]);
+		const volumeTexture = new THREE.Data3DTexture(dataUint8, volumeSize[0], volumeSize[1], volumeSize[2]);
 		volumeTexture.format = THREE.RedFormat;
 		volumeTexture.type = THREE.UnsignedByteType;
 		// Disabling mimpaps saves memory.
@@ -212,70 +285,71 @@
 		return planeMesh;
 	}
 
-	async function displayZarrPoints() {
-		const getData = performance.now();
-		// Create an HTTPStore pointing to the base of your Zarr hierarchy
-		const fetchOptions = { redirect: 'follow', mode: 'no-cors', credentials: 'include' };
-		const supportedMethods = ['GET', 'HEAD'];
-		const store = new HTTPStore('http://localhost:5173/data/ql.zarr', { fetchOptions, supportedMethods });
-		const zarrdata = await openArray({ store, path: 'ql', mode: 'r' });
+	async function downloadZarrPoints() {
+		return new Promise(async (resolve, reject) => {
+			const getData = performance.now();
+			// Create an HTTPStore pointing to the base of your Zarr hierarchy
+			const fetchOptions = { redirect: 'follow', mode: 'no-cors', credentials: 'include' };
+			const supportedMethods = ['GET', 'HEAD'];
+			const store = new HTTPStore('http://localhost:5173/data/ql.zarr', { fetchOptions, supportedMethods });
+			const zarrdata = await openArray({ store, path: 'ql', mode: 'r' });
 
-		const { data, strides, shape } = await zarrdata.getRaw([timeIndex, null, null, null]);
-		dataUint8 = data;
-		// Open the Zarr arrays using the HTTPStore
-		// const xtArray = await openArray({ store, path: 'xt' });
-		// const ytArray = await openArray({ store, path: 'yt' });
-		// const ztArray = await openArray({ store, path: 'zt' });
+			const { data, strides, shape } = await zarrdata.getRaw([timeIndex, null, null, null]);
+			dataUint8 = data;
+			// Open the Zarr arrays using the HTTPStore
+			// const xtArray = await openArray({ store, path: 'xt' });
+			// const ytArray = await openArray({ store, path: 'yt' });
+			// const ztArray = await openArray({ store, path: 'zt' });
 
-		// Assuming the arrays are 1D and of the same length
-		// const [xt, yt, zt] = await Promise.all([xtArray.getRaw(null), ytArray.getRaw(null), ztArray.getRaw(null)]);
-		// console.log('🎹 xt, yt, zt', xt, yt, zt);
-		console.log('...done.), data:', data, strides, shape);
+			// Assuming the arrays are 1D and of the same length
+			// const [xt, yt, zt] = await Promise.all([xtArray.getRaw(null), ytArray.getRaw(null), ztArray.getRaw(null)]);
+			// console.log('🎹 xt, yt, zt', xt, yt, zt);
+			console.log('...done.), data:', data, strides, shape);
 
-		// NOTE: THIS DATA IN NOT SOMETHING THAT THREEJS CAN RENDER,
-		// IT NEEDS TO BE CONVERTED TO A THREEJS GEOMETRY
+			// NOTE: THIS DATA IN NOT SOMETHING THAT THREEJS CAN RENDER,
+			// IT NEEDS TO BE CONVERTED TO A THREEJS GEOMETRY
 
-		const o = performance.now();
+			const o = performance.now();
 
-		// Create the positions array
-		// const positions = new Float32Array(xt.length * 3); // Float32Array?
-		// for (let i = 0; i < xt.length; i++) {
-		// 	positions[i * 3] = xt[i];
-		// 	positions[i * 3 + 1] = yt[i];
-		// 	positions[i * 3 + 2] = zt[i];
-		// }
-		if (timeIndex === 0) {
-			const zarrxvals = await openArray({ store, path: 'xt', mode: 'r' });
-			const zarryvals = await openArray({ store, path: 'yt', mode: 'r' });
-			const zarrzvals = await openArray({ store, path: 'zt', mode: 'r' });
-			const xvals = await zarrxvals.getRaw([null]);
-			const yvals = await zarryvals.getRaw([null]);
-			const zvals = await zarrzvals.getRaw([null]);
+			if (timeIndex === 0) {
+				const zarrxvals = await openArray({ store, path: 'xt', mode: 'r' });
+				const zarryvals = await openArray({ store, path: 'yt', mode: 'r' });
+				const zarrzvals = await openArray({ store, path: 'zt', mode: 'r' });
+				const xvals = await zarrxvals.getRaw([null]);
+				const yvals = await zarryvals.getRaw([null]);
+				const zvals = await zarrzvals.getRaw([null]);
 
-			const xvalues = xvals.data;
-			const dx = xvalues[1] - xvalues[0];
-			const yvalues = yvals.data;
-			const dy = yvalues[1] - yvalues[0];
-			const zvalues = zvals.data;
-			let sumDifferences = 0;
+				const xvalues = xvals.data;
+				const dx = xvalues[1] - xvalues[0];
+				const yvalues = yvals.data;
+				const dy = yvalues[1] - yvalues[0];
+				const zvalues = zvals.data;
+				let sumDifferences = 0;
 
-			for (let i = 1; i < zvalues.length; i++) {
-				sumDifferences += Math.abs(zvalues[i] - zvalues[i - 1]);
+				for (let i = 1; i < zvalues.length; i++) {
+					sumDifferences += Math.abs(zvalues[i] - zvalues[i - 1]);
+				}
+				const dz = sumDifferences / (zvalues.length - 1);
+				console.log('I calculated ', dx, dy, dz);
+				voxelSize = [dx, dy, dz]; // [1536, 1536, 123]
+				volumeSize = [shape[1], shape[2], shape[0]]; // [100, 100, 37.46699284324961]
 			}
-			const dz = sumDifferences / (zvalues.length - 1);
-			console.log('I calculated ', dx, dy, dz);
-			voxelSize = [dx, dy, dz]; // [1536, 1536, 123]
-			volumeSize = [shape[1], shape[2], shape[0]]; // [100, 100, 37.46699284324961]
-		}
 
-		const [boxWidth, boxHeight, boxDepth] = getBoxSize(volumeSize, voxelSize);
-		boxSize = new THREE.Vector3(boxWidth, boxHeight, boxDepth);
-		console.log(`Voxel size ${voxelSize[0]}, ${voxelSize[1]}, ${voxelSize[2]}`);
-		console.log(`Box size ${boxWidth}, ${boxHeight}, ${boxDepth}`);
+			const [boxWidth, boxHeight, boxDepth] = getBoxSize(volumeSize, voxelSize);
+			boxSize = new THREE.Vector3(boxWidth, boxHeight, boxDepth);
+			console.log(`Voxel size ${voxelSize[0]}, ${voxelSize[1]}, ${voxelSize[2]}`);
+			console.log(`Box size ${boxWidth}, ${boxHeight}, ${boxDepth}`);
 
-		const o2 = performance.now();
-		console.log('⏱️ time to get data o', o2 - o, voxelSize, volumeSize);
+			const o2 = performance.now();
+			console.log('⏱️ time to get data o', o2 - o, voxelSize, volumeSize);
 
+			const getData2 = performance.now();
+			console.log('⏰ downloading time slice', getData2 - getData, timeIndex, '...');
+
+			// resolve promise
+			resolve(true);
+		});
+		// renderScene();
 		//
 		//
 		//
@@ -283,80 +357,14 @@
 		//
 		//
 		//
-
-		// Need to process the Data: Convert the DataUint8Array into a format that can be used
-		// to create points in Three.js, such as an array of THREE.Vector3 objects,
-		// which represent the positions of the points in 3D space.
-		// Process DataUint8Array into Vector3 array for Three.js
-		// const points = new THREE.BufferGeometry();
-		// const vertices: number[] = [];
-
-		// Assuming the data is 3D coordinates packed in a flat Uint8Array
-		// for (let i = 0; i < data.length; i += 3) {
-		// vertices.push(data[i], data[i + 1], data[i + 2]);
-		// }
-		// Create the vertices for the geometry
-		// points.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-
-		// Assuming each point is represented by 3 consecutive values in the array
-		// Create a BufferAttribute directly from the UInt8Array
-		// const bufferAttribute = new THREE.BufferAttribute(data, 3);
-
-		// Create BufferGeometry and set the attribute
-		// const geometry = new THREE.BufferGeometry();
-		// geometry.setAttribute('position', bufferAttribute);
-		// Create material for the points
-		// const material = new THREE.PointsMaterial({ size: 0.05, color: 0xff0000 });
-
-		// Create points object
-		// const pointsObject = new THREE.Points(geometry, material);
-		// scene.add(pointsObject);
-
-		//
-		// Create Point Material and Geometry: Use the processed data to create a THREE.BufferGeometry and a THREE.PointsMaterial.
-		//
-
-		//
-		// Create Points Object: Combine the geometry and material to create a THREE.Points object.
-		//
-
-		//
-		// Add the Points to the Scene: Add the THREE.Points object to your scene.
-		//
-
-		// Create the points geometry
-		// const geometry = new THREE.BufferGeometry();
-
-		// Debug: Log the array lengths to make sure they are what you expect
-		// console.log(xt.length, yt.length, zt.length);
-
-		// Combine arrays into one for THREE.BufferAttribute
-		const a = performance.now();
-		// const combined = new Float32Array(xt.length * 3);
-		// for (let i = 0; i < xt.length; i++) {
-		// 	combined[i * 3 + 0] = xt[i]; // x
-		// 	combined[i * 3 + 1] = yt[i]; // y
-		// 	combined[i * 3 + 2] = zt[i]; // z
-		// }
-
-		const a2 = performance.now();
-		console.log('⏱️ time to get data', a2 - a);
-		// geometry.setAttribute('position', new THREE.BufferAttribute(combined, 3));
-
-		// Create the points
-		// const points = new THREE.Points(geometry, material);
-		// scene.add(points);
-
-		const getData2 = performance.now();
-		console.log('⏰ downloading time slice', getData2 - getData, timeIndex, '...');
 	}
 
-	function addBox({ dataUint8, volumeSize }) {
+	async function addBox({ dataUint8, volumeSize }) {
 		// A box in which the 3D volume texture will be rendered.  The box will be
 		// centered at the origin, with X in [-0.5, 0.5] so the width is 1, and
 		// Y (height) and Z (depth) scaled to match.
 		const [boxWidth, boxHeight, boxDepth] = getBoxSize(volumeSize, voxelSize);
-		const boxSize = new THREE.Vector3(boxWidth, boxHeight, boxDepth);
+		boxSize = new THREE.Vector3(boxWidth, boxHeight, boxDepth);
 		console.log(`Voxel size ${voxelSize[0]}, ${voxelSize[1]}, ${voxelSize[2]}`);
 		console.log(`Box size ${boxWidth}, ${boxHeight}, ${boxDepth}`);
 
@@ -364,16 +372,68 @@
 		const box = new THREE.Mesh(boxGeometry);
 		// create a yellow material
 
-		box.material = initMaterial({ dataUint8, volumeSize, boxSize });
 		scene.add(box);
+
+		///
+		//
+		// CONTINUE HERE I THINK THIS IS THE KEY TO GETTING THE DATA INTO THE BOX
+
+		///
+
+		///
+		materialRef = initMaterial({ dataUint8, volumeSize, boxSize });
+		box.material = materialRef;
+
+		// Dispose of the old texture to free up memory.
+		box.material.uniforms.volumeTex.value.dispose();
+
+		// Create a new 3D texture for the volume data.
+		const volumeTexture = new THREE.Data3DTexture(dataUint8, volumeSize[0], volumeSize[1], volumeSize[2]);
+		volumeTexture.format = THREE.RedFormat;
+		volumeTexture.type = THREE.UnsignedByteType;
+		volumeTexture.generateMipmaps = false; // Saves memory.
+		volumeTexture.minFilter = THREE.LinearFilter; // Better for volume rendering.
+		volumeTexture.magFilter = THREE.LinearFilter;
+		volumeTexture.needsUpdate = true;
+
+		// Update material uniforms with new texture and parameters.
+		box.material.uniforms.volumeTex.value = volumeTexture;
+		// box.material.uniforms.transferTex.value = transferFunctionTex;
+		box.material.uniforms.transferTex.value = makeCloudTransferTex();
+		box.material.uniforms.dtScale.value = dtScale;
+		box.material.uniforms.inScatFactor.value = inScatFactor;
+		box.material.uniforms.qLScale.value = qLScale;
+		box.material.uniforms.gHG.value = gHG;
+		box.material.uniforms.dataEpsilon.value = dataEpsilon;
+		box.material.uniforms.bottomColor.value = bottomColor;
+		box.material.uniforms.finalGamma.value = finalGamma;
+
+		// Initial render to display the scene.
+		renderScene();
+		///
+		//
+
+		//
+
+		//
+
+		// const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+
+		console.log('🔋 add box');
+		// box.material = material;
+		renderScene();
+		// updateMaterial({ dataUint8, volumeSize });
+		// initMaterial({ dataUint8, volumeSize, boxSize });
 	}
 
-	onMount(() => {
-		create3DScene();
-		displayZarrPoints();
+	onMount(async () => {
+		console.log('🎹 1');
 
-		addBox({ dataUint8, volumeSize });
-		updateMaterial({ dataUint8, volumeSize });
+		await create3DScene();
+		console.log('🎹 2');
+		await downloadZarrPoints();
+		console.log('🎹 3');
+		await addBox({ dataUint8, volumeSize });
 	});
 </script>
 
