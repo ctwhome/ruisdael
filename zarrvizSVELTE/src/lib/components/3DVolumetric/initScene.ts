@@ -1,17 +1,15 @@
 // import { writable } from 'svelte/store';
 import CameraControls from 'camera-controls';
 import * as THREE from 'three';
-// import fragmentShaderVolume from '$lib/shaders/volume.frag';
 import { getBoxSize } from '$lib/utils/Utils';
 // import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+// import OrbitUnlimitedControls from '@janelia/three-orbit-unlimited-controls';
 
-
-import fragmentShaderVolume from '$lib/shaders/simple.frag';
+// import fragmentShaderVolume from '$lib/shaders/simple.frag';
+import fragmentShaderVolume from '$lib/shaders/volume.frag';
 import vertexShaderVolume from '$lib/shaders/volume.vert';
 
 // import { addPlainMap } from './addPlainMap';
-
-// import OrbitUnlimitedControls from '@janelia/three-orbit-unlimited-controls';
 
 export const scene: THREE.Scene | null = new THREE.Scene();
 export let camera: THREE.PerspectiveCamera | null = null;
@@ -25,61 +23,8 @@ const clock = new THREE.Clock();
 CameraControls.install({ THREE: THREE });
 
 
-function initMaterial(renderer, box, boxSize, sunLight, hemisphereLight, volumeDataUint8, volumeSize, voxelSize, cameraNear, cameraFar) {
-	const volumeTexture = new THREE.Data3DTexture(volumeDataUint8, volumeSize[0], volumeSize[1], volumeSize[2]);
-	volumeTexture.format = THREE.RedFormat;
-	volumeTexture.type = THREE.UnsignedByteType;
-	// Disabling mimpaps saves memory.
-	volumeTexture.generateMipmaps = false;
-	// Linear filtering disables LODs, which do not help with volume rendering.
-	volumeTexture.minFilter = THREE.LinearFilter;
-	volumeTexture.magFilter = THREE.LinearFilter;
-	volumeTexture.needsUpdate = true;
 
-	const lightColor = sunLight.color;
-	const lightColorV = new THREE.Vector3(lightColor.r, lightColor.g, lightColor.b);
-	//      const ambientLightColorV = new THREE.Vector3(0.3, 0.7, 0.98);
-	const ambientLightColorV = new THREE.Vector3(
-		hemisphereLight.color.r,
-		hemisphereLight.color.g,
-		hemisphereLight.color.b
-	);
-
-	const boxMaterial = new THREE.ShaderMaterial({
-		vertexShader: vertexShaderVolume,
-		fragmentShader: fragmentShaderVolume,
-		side: THREE.BackSide,
-		transparent: true,
-		opacity: 1.0,
-		uniforms: {
-			boxSize: new THREE.Uniform(boxSize),
-			volumeTex: new THREE.Uniform(volumeTexture),
-			voxelSize: new THREE.Uniform(voxelSize),
-			sunLightDir: new THREE.Uniform(sunLight.position),
-			sunLightColor: new THREE.Uniform(lightColorV),
-			ambientLightColor: new THREE.Uniform(ambientLightColorV),
-			near: new THREE.Uniform(cameraNear),
-			far: new THREE.Uniform(cameraFar),
-			// The following are set separately, since they are based on `props` values that can
-			// change often, and should not trigger complete re-initialization.
-			transferTex: new THREE.Uniform(null),
-			dtScale: new THREE.Uniform(0),
-			inScatFactor: new THREE.Uniform(0),
-			qLScale: new THREE.Uniform(0),
-			gHG: new THREE.Uniform(0),
-			dataEpsilon: new THREE.Uniform(0),
-			bottomColor: new THREE.Uniform(new THREE.Vector3(0.0, 0.0005, 0.0033)),
-			finalGamma: new THREE.Uniform(0)
-		}
-	});
-
-
-	/* eslint no-param-reassign: ["error", { "props": false }] */
-	box.material = boxMaterial;
-
-}
-
-export function initScene(
+export async function initScene(
 	canvas,
 	volumeSize,
 	voxelSize,
@@ -108,10 +53,10 @@ export function initScene(
 	// controls.zoomSpeed = 0.5;
 	// controls.update();
 
+	window.addEventListener('resize', resize);
 	resize();
 	animate();
 
-	window.addEventListener('resize', resize);
 
 	camera.position.set(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
 	camera.up.set(cameraUp[0], cameraUp[1], cameraUp[2]);
@@ -124,14 +69,6 @@ export function initScene(
 	scene.add(gridHelper);
 
 
-	const [boxWidth = 1, boxHeight = 1, boxDepth = 0.3] = getBoxSize(volumeSize, voxelSize);
-	// const boxSize = new THREE.Vector3(boxWidth, boxHeight, boxDepth);
-	console.log(`Voxel size ${voxelSize[0]}, ${voxelSize[1]}, ${voxelSize[2]}`);
-	console.log(`Box size ${boxWidth}, ${boxHeight}, ${boxDepth}`);
-
-	const boxGeometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
-	const box = new THREE.Mesh(boxGeometry);
-	scene.add(box);
 
 	// Lights, to be used both during rendering the volume, and rendering the optional surface.
 	const sunLightDir = new THREE.Vector3(0.0, 0.5, 0.5);
@@ -151,12 +88,186 @@ export function initScene(
 	scene.add(axesHelper);
 
 	//
+
+
+
+
+	//
+	// EXAMPLE POINTS
+	//
+	// Create a buffer to store positions of points.
+	const numberOfPoints = 50000;
+	const positions = new Float32Array(numberOfPoints * 3);
+	const dataUint8 = new Uint8Array(numberOfPoints);
+
+	// Populate the position buffer and dataUint8 with random data.
+	for (let i = 0; i < numberOfPoints; i++) {
+		positions[i * 3] = Math.random() * 2 - 1; // x
+		positions[i * 3 + 1] = Math.random() * 2 - 1; // y
+		positions[i * 3 + 2] = Math.random() * 2 - 1; // z
+
+		// Fill dataUint8 with random values.
+		dataUint8[i] = Math.floor(Math.random() * 255);
+	}
+
+	// Create an instance of THREE.BufferGeometry and set the random positions as its attribute.
+	const geometry = new THREE.BufferGeometry();
+	geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+	// Use THREE.PointsMaterial to create a material for the points. The color can be set as needed.
+	const material = new THREE.PointsMaterial({ size: 0.02, vertexColors: false });
+
+	// Create a points object with the geometry and material.
+	const points = new THREE.Points(geometry, material);
+
+	// Add the points to the scene.
+	scene.add(points);
+	// END OF EXAMPLE POINTS
+
+
+
+	//
+	// Add clouds container
+	//
+	const [boxWidth = 1, boxHeight = 1, boxDepth = 0.3] = getBoxSize(volumeSize, voxelSize);
+	const boxSize = new THREE.Vector3(boxWidth, boxHeight, boxDepth);
+	console.log(`Voxel size ${voxelSize[0]}, ${voxelSize[1]}, ${voxelSize[2]}`);
+	console.log(`Box size ${boxWidth}, ${boxHeight}, ${boxDepth}`);
+
+	const boxGeometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
+	const box = new THREE.Mesh(boxGeometry);
+	scene.add(box);
+
+
+	//
 	//
 	// CONTUNUE HERE
 	//
 	//
-	// initMaterial(renderer, box, boxSize, sunLight, hemisphereLight, volumeDataUint8, volumeSize, voxelSize, cameraNear, cameraFar);
+	await new Promise(resolve => setTimeout(resolve, 1000)); // 3 sec
+
+	// initMaterial(
+	// 	box,
+	// 	boxSize,
+	// 	sunLight,
+	// 	hemisphereLight,
+	// 	volumeDataUint8,
+	// 	volumeSize,
+	// 	voxelSize,
+	// 	cameraNear,
+	// 	cameraFar
+	// );
+
+	console.log('update box material');
+
+	// boxMaterial.uniforms.volumeTex.value.dispose();
+	// let volumeTexture = new THREE.DataTexture3D(volumeDataUint8, volumeSize[0], volumeSize[1], volumeSize[2]);
+	// volumeTexture.format = THREE.RedFormat
+	// volumeTexture.type = THREE.UnsignedByteType
+	// // Disabling mimpaps saves memory.
+	// volumeTexture.generateMipmaps = false;
+	// // Linear filtering disables LODs, which do not help with volume rendering.
+	// volumeTexture.minFilter = THREE.LinearFilter;
+	// volumeTexture.magFilter = THREE.LinearFilter;
+	// volumeTexture.needsUpdate = true
+	// boxMaterial.uniforms.volumeTex.value = volumeTexture;
+	// boxMaterial.uniforms.transferTex.value = transferFunctionTex;
+	// boxMaterial.uniforms.dtScale.value = dtScale;
+	// boxMaterial.uniforms.inScatFactor.value = inScatFactor;
+	// boxMaterial.uniforms.qLScale.value = qLScale;
+	// boxMaterial.uniforms.gHG.value = gHG;
+	// boxMaterial.uniforms.dataEpsilon.value = dataEpsilon;
+	// boxMaterial.uniforms.bottomColor.value = bottomColor;
+	// boxMaterial.uniforms.finalGamma.value = finalGamma;
+
+	// This `useEffect` follows the first React rendering, so it is necessary to
+	// explicitly force a Three.js rendering to make the volme visible before any
+	// interactive camera motion.
+	// renderScene();
+}//, [dtScale, inScatFactor, finalGamma, renderScene, transferFunctionTex]);
+
+
+function initMaterial(box, boxSize, sunLight, hemisphereLight, volumeDataUint8, volumeSize, voxelSize, cameraNear, cameraFar) {
+	const volumeTexture = new THREE.DataTexture3D(volumeDataUint8, volumeSize[0], volumeSize[1], volumeSize[2]);
+	volumeTexture.format = THREE.RedFormat;
+	volumeTexture.type = THREE.UnsignedByteType;
+	// Disabling mimpaps saves memory.
+	volumeTexture.generateMipmaps = false;
+	// Linear filtering disables LODs, which do not help with volume rendering.
+	volumeTexture.minFilter = THREE.LinearFilter;
+	volumeTexture.magFilter = THREE.LinearFilter;
+	volumeTexture.needsUpdate = true;
+
+
+
+	// Create a buffer with your 3D texture data
+	const size = volumeSize[0] * volumeSize[1] * volumeSize[2];
+	const data = new Uint8Array(size);
+
+	// Fill the data with your values
+	for (let i = 0; i < size; i++) {
+		data[i] = Math.random() * 255;
+	}
+
+	// Create the 3D texture
+	const texture = new THREE.DataTexture3D(data, volumeSize[0], volumeSize[1], volumeSize[2]);
+
+	// Set the texture parameters as needed
+	texture.format = THREE.RedFormat;
+	texture.type = THREE.UnsignedByteType;
+	texture.minFilter = THREE.LinearFilter;
+	texture.magFilter = THREE.LinearFilter;
+	texture.unpackAlignment = 1;
+
+
+
+
+
+
+	const lightColor = sunLight.color;
+	const lightColorV = new THREE.Vector3(lightColor.r, lightColor.g, lightColor.b);
+	//      const ambientLightColorV = new THREE.Vector3(0.3, 0.7, 0.98);
+	const ambientLightColorV = new THREE.Vector3(
+		hemisphereLight.color.r,
+		hemisphereLight.color.g,
+		hemisphereLight.color.b
+	);
+
+	const boxMaterial = new THREE.ShaderMaterial({
+		vertexShader: vertexShaderVolume,
+		fragmentShader: fragmentShaderVolume,
+		side: THREE.BackSide,
+		transparent: true,
+		opacity: 1.0,
+		uniforms: {
+			boxSize: new THREE.Uniform(boxSize),
+			volumeTex: new THREE.Uniform(texture),
+			// volumeTex: new THREE.Uniform(volumeTexture),
+			voxelSize: new THREE.Uniform(voxelSize),
+			sunLightDir: new THREE.Uniform(sunLight.position),
+			sunLightColor: new THREE.Uniform(lightColorV),
+			ambientLightColor: new THREE.Uniform(ambientLightColorV),
+			near: new THREE.Uniform(cameraNear),
+			far: new THREE.Uniform(cameraFar),
+			// The following are set separately, since they are based on `props` values that can
+			// change often, and should not trigger complete re-initialization.
+			transferTex: new THREE.Uniform(null),
+			dtScale: new THREE.Uniform(0),
+			inScatFactor: new THREE.Uniform(0),
+			qLScale: new THREE.Uniform(0),
+			gHG: new THREE.Uniform(0),
+			dataEpsilon: new THREE.Uniform(0),
+			bottomColor: new THREE.Uniform(new THREE.Vector3(0.0, 0.0005, 0.0033)),
+			finalGamma: new THREE.Uniform(0)
+		}
+	});
+
+
+	/* eslint no-param-reassign: ["error", { "props": false }] */
+	box.material = boxMaterial;
+
 }
+
 
 export function setCameraView(position: number[], up: number[]) {
 	animate();
@@ -185,7 +296,7 @@ function animate(
 	renderer.render(scene, camera);
 }
 
-const resize = () => {
+function resize() {
 	renderer.setSize(window.innerWidth, 400);
 	camera.aspect = window.innerWidth / 400;
 	camera.updateProjectionMatrix();

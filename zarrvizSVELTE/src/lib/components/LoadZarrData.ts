@@ -1,8 +1,11 @@
 import { writable, get } from 'svelte/store';
-import { openArray, HTTPStore, slice } from 'zarr';
+import {
+	openArray, HTTPStore
+	// , slice
+} from 'zarr';
 import { Queue } from 'async-await-queue';
 
-export let dataShape = [];
+export const dataShape = writable([]);
 export const dataCellSize = writable([]);
 export const allTimeSlices = writable([]);
 
@@ -44,7 +47,7 @@ export async function fetchData(url: string, path: string, timeIndex: number) {
 		timeSlices[timeIndex] = data;
 		return timeSlices;
 	});
-	console.log('🎹 allTimeSlices', get(allTimeSlices)[timeIndex]);
+	console.log('🎹 allTimeSlices', get(allTimeSlices).length);
 
 	// If this is the first time slice, calculate the cell size and shape
 	if (timeIndex === 0) {
@@ -68,7 +71,7 @@ export async function fetchData(url: string, path: string, timeIndex: number) {
 		const dz = sumDifferences / (zvalues.length - 1);
 		console.log('I calculated ', dx, dy, dz);
 		dataCellSize.update(() => [dx, dy, dz]);
-		dataShape = [shape[1], shape[2], shape[0]];
+		dataShape.update(() => [shape[1], shape[2], shape[0]]);
 	}
 }
 

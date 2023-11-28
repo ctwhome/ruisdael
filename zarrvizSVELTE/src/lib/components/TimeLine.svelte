@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	export let playAnimation = false;
 	export let length = 0;
@@ -11,19 +11,19 @@
 	<!--  Play icon -->
 	<button class="btn" class:btn-primary={playAnimation} on:click={() => dispatch('togglePlay')}>
 		{#if !playAnimation}
-			<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"
-				><path
+			<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
+				<path
 					fill="currentColor"
 					d="M9.525 18.025q-.5.325-1.012.038T8 17.175V6.825q0-.6.513-.888t1.012.038l8.15 5.175q.45.3.45.85t-.45.85l-8.15 5.175Z"
-				/></svg
-			>
+				/>
+			</svg>
 		{:else}
-			<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"
-				><path
+			<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
+				<path
 					fill="currentColor"
 					d="M16 19q-.825 0-1.413-.588T14 17V7q0-.825.588-1.413T16 5q.825 0 1.413.588T18 7v10q0 .825-.588 1.413T16 19Zm-8 0q-.825 0-1.413-.588T6 17V7q0-.825.588-1.413T8 5q.825 0 1.413.588T10 7v10q0 .825-.588 1.413T8 19Z"
-				/></svg
-			>
+				/>
+			</svg>
 		{/if}
 	</button>
 	<div class="w-full">
@@ -34,10 +34,11 @@
 			min="1"
 			max={length}
 			step="1"
-			value={positionIndex}
-			on:input={(event) => console.log('🎹 ', event?.target?.value)}
+			value={positionIndex + 1}
+			on:input={(event) => {
+				dispatch('onSelectedIndex', { index: parseInt(event.target.value) });
+			}}
 		/>
-
 		<div class="w-full flex justify-between text-xs px-2">
 			<!-- Steps -->
 			<!--  array of steps from 0 to length -->

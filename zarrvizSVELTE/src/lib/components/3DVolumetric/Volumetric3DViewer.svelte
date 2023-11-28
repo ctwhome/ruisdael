@@ -70,6 +70,9 @@
 
 		addPlainMap();
 
+
+
+		
 		// CONTINUE HERE
 
 		///////////////////
@@ -174,4 +177,3 @@
 </div>
 
 <button on:click={() => console.log(camera?.position)}>print camera</button>
-<pre>{JSON.stringify(camera, null, 2)}</pre>
