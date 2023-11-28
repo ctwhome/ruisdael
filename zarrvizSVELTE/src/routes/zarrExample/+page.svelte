@@ -381,10 +381,11 @@
 		///
 
 		///
-		materialRef = initMaterial({ dataUint8, volumeSize, boxSize });
+		materialRef = await initMaterial({ dataUint8, volumeSize, boxSize });
 		box.material = materialRef;
 
 		// Dispose of the old texture to free up memory.
+
 		box.material.uniforms.volumeTex.value.dispose();
 
 		// Create a new 3D texture for the volume data.
