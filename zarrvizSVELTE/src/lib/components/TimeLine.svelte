@@ -86,4 +86,10 @@
 		on:input={(event) => (playSpeedInMiliseconds = parseInt(event?.target?.value))}
 	/>
 	currentTimeIndex: {$currentTimeIndex}
+	{#if $allTimeSlices.length <= 1}
+		<div>
+			| Loading data
+			<progress class="progress w-56" />
+		</div>
+	{/if}
 </div>
