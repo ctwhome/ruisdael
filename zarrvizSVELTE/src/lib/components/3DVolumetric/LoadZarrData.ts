@@ -7,7 +7,8 @@ import { Queue } from 'async-await-queue';
 
 export const dataShape = writable([]);
 export const dataCellSize = writable([]);
-export const allTimeSlices = writable([]);
+// export const allTimeSlices = writable([]);
+import { allTimeSlices } from '$lib/components/VolumetricRenderer/allSlices.store';
 
 /**
  * Fetches data from a given URL and path for a specific time index.

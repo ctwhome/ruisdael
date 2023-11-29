@@ -1,24 +1,28 @@
 <script lang="ts">
 	import { afterUpdate, onMount } from 'svelte';
 	import * as THREE from 'three';
-	import { openArray, HTTPStore, create } from 'zarr';
 	import CameraControls from 'camera-controls';
 	import vertexShaderVolume from '$lib/shaders/volume.vert';
 	import fragmentShaderVolume from '$lib/shaders/volume.frag';
 	import { makeCloudTransferTex } from '$lib/utils/makeCloudTransferTex';
 	import { getBoxSize } from '$lib/utils/Utils';
-	import type { PersistenceMode } from 'zarr/types/types';
+	import { fetchSlice } from './fetchSlice';
+	import { fetchAllSlices } from './fetchAllSlices';
+	import { allTimeSlices, getVoxelAndVolumeSize, voxelSize, volumeSize, boxSize } from './allSlices.store';
+	import { get } from 'svelte/store';
 
 	// import examplePoints from '$lib/components/3DVolumetric/examplePoints';
 
 	CameraControls.install({ THREE: THREE });
 	// Other variables and refs
 
-	export let timeSliceIndex = 0;
+	export let currentTimeIndex = 0;
 	// let dataUint8: Uint8Array = new Uint8Array(0);
 	// let voxelSize: number[]; // = //[100, 100, 37.46];
 	// let volumeSize: number[]; // = //[1536, 1536, 123];
 	// const zarrArray = await openArray({ store: 'http://localhost:5173/data/ql.zarr' });
+
+	let box: THREE.Mesh;
 
 	let cameraControls: CameraControls | null = null;
 	let canvas: HTMLElement;
@@ -68,6 +72,7 @@
 		return cube; // Add the cube to the scene
 	}
 
+	// Create the Three.js scene
 	function create3DScene(): void {
 		// Set up the Three.js scene
 		scene = new THREE.Scene();
@@ -130,11 +135,21 @@
 		resize();
 		animate();
 
-		console.log('🔋 3d scene created');
+		// console.log('🔋 3d scene created');
+	}
+	// Render the scene. This function can be reused in other effects or callbacks.
+	function renderScene(): void {
+		renderer.render(scene, camera);
+		console.log('🔥 rendered');
 	}
 
-	async function initMaterial({ dataUint8, boxSize, volumeSize, voxelSize }): Promise<THREE.Material> {
-		const volumeTexture = new THREE.Data3DTexture(dataUint8, volumeSize[0], volumeSize[1], volumeSize[2]);
+	async function initMaterial({ dataUint8 }): Promise<THREE.Material> {
+		const volumeTexture = new THREE.Data3DTexture(
+			dataUint8,
+			get(volumeSize)[0],
+			get(volumeSize)[1],
+			get(volumeSize)[2]
+		);
 		volumeTexture.format = THREE.RedFormat;
 		volumeTexture.type = THREE.UnsignedByteType;
 		// Disabling mimpaps saves memory.
@@ -151,9 +166,9 @@
 			transparent: true,
 			opacity: 1.0,
 			uniforms: {
-				boxSize: new THREE.Uniform(boxSize),
+				boxSize: new THREE.Uniform(get(boxSize)),
 				volumeTex: new THREE.Uniform(volumeTexture),
-				voxelSize: new THREE.Uniform(voxelSize),
+				voxelSize: new THREE.Uniform(get(voxelSize)),
 				sunLightDir: new THREE.Uniform(sunLight.position),
 				sunLightColor: new THREE.Uniform(lightColorV),
 				ambientLightColor: new THREE.Uniform(ambientLightColorV),
@@ -174,10 +189,35 @@
 		return boxMaterial;
 	}
 
-	// Render the scene. This function can be reused in other effects or callbacks.
-	function renderScene(): void {
-		renderer.render(scene, camera);
-		console.log('🔥 rendered');
+	function updateMaterial({ dataUint8 }) {
+		// Dispose of the old texture to free up memory.
+		box.material.uniforms.volumeTex.value.dispose();
+
+		// Create a new 3D texture for the volume data.
+		const volumeTexture = new THREE.Data3DTexture(
+			dataUint8,
+			get(volumeSize)[0],
+			get(volumeSize)[1],
+			get(volumeSize)[2]
+		);
+		volumeTexture.format = THREE.RedFormat;
+		volumeTexture.type = THREE.UnsignedByteType;
+		volumeTexture.generateMipmaps = false; // Saves memory.
+		volumeTexture.minFilter = THREE.LinearFilter; // Better for volume rendering.
+		volumeTexture.magFilter = THREE.LinearFilter;
+		volumeTexture.needsUpdate = true;
+
+		// Update material uniforms with new texture and parameters.
+		box.material.uniforms.volumeTex.value = volumeTexture;
+		// box.material.uniforms.transferTex.value = transferFunctionTex;
+		box.material.uniforms.transferTex.value = transferTexture;
+		box.material.uniforms.dtScale.value = dtScale;
+		box.material.uniforms.inScatFactor.value = inScatFactor;
+		box.material.uniforms.qLScale.value = qLScale;
+		box.material.uniforms.gHG.value = gHG;
+		box.material.uniforms.dataEpsilon.value = dataEpsilon;
+		box.material.uniforms.bottomColor.value = bottomColor;
+		box.material.uniforms.finalGamma.value = finalGamma;
 	}
 
 	//
@@ -201,102 +241,18 @@
 		return planeMesh;
 	}
 
-	async function getVoxelAndVolumeSize({ store, shape, path, mode }) {
-		// if (timeSliceIndex === 0) {
-		const zarrxvals = await openArray({ store, path: 'xt', mode: 'r' });
-		const zarryvals = await openArray({ store, path: 'yt', mode: 'r' });
-		const zarrzvals = await openArray({ store, path: 'zt', mode: 'r' });
-		const xvals = await zarrxvals.getRaw([null]);
-		const yvals = await zarryvals.getRaw([null]);
-		const zvals = await zarrzvals.getRaw([null]);
-
-		const xvalues = xvals.data;
-		const dx = xvalues[1] - xvalues[0];
-		const yvalues = yvals.data;
-		const dy = yvalues[1] - yvalues[0];
-		const zvalues = zvals.data;
-		let sumDifferences = 0;
-
-		for (let i = 1; i < zvalues.length; i++) {
-			sumDifferences += Math.abs(zvalues[i] - zvalues[i - 1]);
-		}
-		const dz = sumDifferences / (zvalues.length - 1);
-		// console.log('I calculated ', dx, dy, dz);
-		// }
-
-		const voxelSize = [dx, dy, dz]; // [1536, 1536, 123]
-		const volumeSize = [shape[1], shape[2], shape[0]]; // [100, 100, 37.46699284324961]
-
-		const [boxWidth, boxHeight, boxDepth] = getBoxSize(volumeSize, voxelSize);
-		const boxSize = new THREE.Vector3(boxWidth, boxHeight, boxDepth);
-		// console.log(`Voxel size ${voxelSize[0]}, ${voxelSize[1]}, ${voxelSize[2]}`);
-		// console.log(`Box size ${boxWidth}, ${boxHeight}, ${boxDepth}`);
-		return { voxelSize, volumeSize, boxSize };
-	}
-
-	async function downloadZarrPoints({
-		timeSliceIndex = 0,
-		url = 'http://localhost:5173/data/ql.zarr',
-		path = 'ql',
-		mode = 'r' as PersistenceMode
-	}) {
-		// Create an HTTPStore pointing to the base of your Zarr hierarchy
-		const store = new HTTPStore(url, {
-			fetchOptions: { redirect: 'follow', mode: 'no-cors', credentials: 'include' }
-		});
-		const zarrdata = await openArray({ store, path, mode });
-
-		const { data, strides, shape } = await zarrdata.getRaw([timeSliceIndex, null, null, null]);
-
-		return { dataUint8: data, strides, shape, store };
-		// renderScene();
-		//
-		//
-		//
-		// We have the data and the size of the volume here
-		//
-		//
-		//
-	}
-
-	function updateMaterial({ dataUint8, volumeSize, box }) {
-		// Dispose of the old texture to free up memory.
-		box.material.uniforms.volumeTex.value.dispose();
-
-		// Create a new 3D texture for the volume data.
-		const volumeTexture = new THREE.Data3DTexture(dataUint8, volumeSize[0], volumeSize[1], volumeSize[2]);
-		volumeTexture.format = THREE.RedFormat;
-		volumeTexture.type = THREE.UnsignedByteType;
-		volumeTexture.generateMipmaps = false; // Saves memory.
-		volumeTexture.minFilter = THREE.LinearFilter; // Better for volume rendering.
-		volumeTexture.magFilter = THREE.LinearFilter;
-		volumeTexture.needsUpdate = true;
-
-		// Update material uniforms with new texture and parameters.
-		box.material.uniforms.volumeTex.value = volumeTexture;
-		// box.material.uniforms.transferTex.value = transferFunctionTex;
-		box.material.uniforms.transferTex.value = transferTexture;
-		box.material.uniforms.dtScale.value = dtScale;
-		box.material.uniforms.inScatFactor.value = inScatFactor;
-		box.material.uniforms.qLScale.value = qLScale;
-		box.material.uniforms.gHG.value = gHG;
-		box.material.uniforms.dataEpsilon.value = dataEpsilon;
-		box.material.uniforms.bottomColor.value = bottomColor;
-		box.material.uniforms.finalGamma.value = finalGamma;
-	}
-
 	/* A box in which the 3D volume texture will be rendered.  The box will be
 	 * centered at the origin, with X in [-0.5, 0.5] so the width is 1, and
 	 * Y (height) and Z (depth) scaled to match.
 	 */
-	async function addVolumetricRenderingContainer({ dataUint8, volumeSize, boxSize, voxelSize }) {
-		const boxGeometry = new THREE.BoxGeometry(volumeSize[0], volumeSize[1], volumeSize[2]);
-		const box = new THREE.Mesh(boxGeometry);
+	async function addVolumetricRenderingContainer({ dataUint8 }) {
+		const boxGeometry = new THREE.BoxGeometry(get(volumeSize)[0], get(volumeSize)[1], get(volumeSize)[2]);
+		box = new THREE.Mesh(boxGeometry);
 		scene.add(box);
 
-		box.material = await initMaterial({ dataUint8, volumeSize, boxSize, voxelSize });
+		box.material = await initMaterial({ dataUint8 });
 
-		updateMaterial({ dataUint8, volumeSize, box });
+		updateMaterial({ dataUint8 });
 		// renderScene();
 		// initMaterial({ dataUint8, volumeSize, boxSize });
 	}
@@ -312,18 +268,23 @@
 		// scene.add(examplePoints());
 
 		const timing = performance.now();
-		// Download data
-		const { dataUint8, store, shape } = await downloadZarrPoints({ timeSliceIndex });
-		// Get voxel and volume size
-		const { voxelSize, volumeSize, boxSize } = await getVoxelAndVolumeSize({ store, shape });
+		// Download first slice of the data and calculate the voxel and volume size. It runs only once.
+		const { dataUint8, store, shape } = await fetchSlice({ currentTimeIndex });
+		// const { voxelSize, volumeSize, boxSize } = await getVoxelAndVolumeSize({ store, shape });
+		await getVoxelAndVolumeSize({ store, shape });
 
 		// Add box container for the data
-		addVolumetricRenderingContainer({ dataUint8, volumeSize, boxSize, voxelSize });
+		await addVolumetricRenderingContainer({ dataUint8 });
+		fetchAllSlices({ url: 'http://localhost:5173/data/ql.zarr', path: 'ql' });
 
-		console.log('⏰ performed in:', Math.round(performance.now() - timing), 'ms');
+		console.log('⏰ data downloaded and displayed in:', Math.round(performance.now() - timing), 'ms');
 	});
 	afterUpdate(() => {
-		console.log('🎹 updated index', timeSliceIndex);
+		// console.log('🎹 updated index', get(allTimeSlices)[currentTimeIndex]);
+		const dataUint8 = get(allTimeSlices)[currentTimeIndex];
+		if (dataUint8) {
+			updateMaterial({ dataUint8 });
+		}
 	});
 </script>
 

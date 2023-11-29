@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	export let playAnimation = false;
-	export let length = 0;
+	export let length = 10;
 	export let positionIndex = 0;
 
 	const dispatch = createEventDispatcher();
@@ -45,7 +45,7 @@
 			{#each Array.from({ length }, (_, index) => index) as step}
 				<div class="flex flex-col">
 					<div>|</div>
-					<div class="-ml-1">{step}</div>
+					<div class="-ml-1">{step + 1}</div>
 				</div>
 			{/each}
 		</div>

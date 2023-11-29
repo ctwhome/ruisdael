@@ -8,6 +8,7 @@ import { getBoxSize } from '$lib/utils/Utils';
 // import fragmentShaderVolume from '$lib/shaders/simple.frag';
 import fragmentShaderVolume from '$lib/shaders/volume.frag';
 import vertexShaderVolume from '$lib/shaders/volume.vert';
+import examplePoints from '../VolumetricRenderer/examplePoints';
 
 // import { addPlainMap } from './addPlainMap';
 
@@ -92,36 +93,10 @@ export async function initScene(
 
 
 
-	//
-	// EXAMPLE POINTS
-	//
-	// Create a buffer to store positions of points.
-	const numberOfPoints = 50000;
-	const positions = new Float32Array(numberOfPoints * 3);
-	const dataUint8 = new Uint8Array(numberOfPoints);
 
-	// Populate the position buffer and dataUint8 with random data.
-	for (let i = 0; i < numberOfPoints; i++) {
-		positions[i * 3] = Math.random() * 2 - 1; // x
-		positions[i * 3 + 1] = Math.random() * 2 - 1; // y
-		positions[i * 3 + 2] = Math.random() * 2 - 1; // z
-
-		// Fill dataUint8 with random values.
-		dataUint8[i] = Math.floor(Math.random() * 255);
-	}
-
-	// Create an instance of THREE.BufferGeometry and set the random positions as its attribute.
-	const geometry = new THREE.BufferGeometry();
-	geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-	// Use THREE.PointsMaterial to create a material for the points. The color can be set as needed.
-	const material = new THREE.PointsMaterial({ size: 0.02, vertexColors: false });
-
-	// Create a points object with the geometry and material.
-	const points = new THREE.Points(geometry, material);
 
 	// Add the points to the scene.
-	scene.add(points);
+	scene.add(examplePoints());
 	// END OF EXAMPLE POINTS
 
 
@@ -139,52 +114,7 @@ export async function initScene(
 	scene.add(box);
 
 
-	//
-	//
-	// CONTUNUE HERE
-	//
-	//
-	await new Promise(resolve => setTimeout(resolve, 1000)); // 3 sec
-
-	// initMaterial(
-	// 	box,
-	// 	boxSize,
-	// 	sunLight,
-	// 	hemisphereLight,
-	// 	volumeDataUint8,
-	// 	volumeSize,
-	// 	voxelSize,
-	// 	cameraNear,
-	// 	cameraFar
-	// );
-
-	console.log('update box material');
-
-	// boxMaterial.uniforms.volumeTex.value.dispose();
-	// let volumeTexture = new THREE.DataTexture3D(volumeDataUint8, volumeSize[0], volumeSize[1], volumeSize[2]);
-	// volumeTexture.format = THREE.RedFormat
-	// volumeTexture.type = THREE.UnsignedByteType
-	// // Disabling mimpaps saves memory.
-	// volumeTexture.generateMipmaps = false;
-	// // Linear filtering disables LODs, which do not help with volume rendering.
-	// volumeTexture.minFilter = THREE.LinearFilter;
-	// volumeTexture.magFilter = THREE.LinearFilter;
-	// volumeTexture.needsUpdate = true
-	// boxMaterial.uniforms.volumeTex.value = volumeTexture;
-	// boxMaterial.uniforms.transferTex.value = transferFunctionTex;
-	// boxMaterial.uniforms.dtScale.value = dtScale;
-	// boxMaterial.uniforms.inScatFactor.value = inScatFactor;
-	// boxMaterial.uniforms.qLScale.value = qLScale;
-	// boxMaterial.uniforms.gHG.value = gHG;
-	// boxMaterial.uniforms.dataEpsilon.value = dataEpsilon;
-	// boxMaterial.uniforms.bottomColor.value = bottomColor;
-	// boxMaterial.uniforms.finalGamma.value = finalGamma;
-
-	// This `useEffect` follows the first React rendering, so it is necessary to
-	// explicitly force a Three.js rendering to make the volme visible before any
-	// interactive camera motion.
-	// renderScene();
-}//, [dtScale, inScatFactor, finalGamma, renderScene, transferFunctionTex]);
+}
 
 
 function initMaterial(box, boxSize, sunLight, hemisphereLight, volumeDataUint8, volumeSize, voxelSize, cameraNear, cameraFar) {
@@ -301,3 +231,5 @@ function resize() {
 	camera.aspect = window.innerWidth / 400;
 	camera.updateProjectionMatrix();
 };
+
+
