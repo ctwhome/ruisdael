@@ -263,6 +263,8 @@
 	onMount(async () => {
 		// 3D scene
 		create3DScene();
+		// get url and port from the browser
+		const url = window.location.href + 'data/animated-data/ql.zarr';
 
 		// Add exmample cube
 		// scene.add(addExampleCube());
@@ -272,13 +274,16 @@
 
 		const timing = performance.now();
 		// Download first slice of the data and calculate the voxel and volume size. It runs only once.
-		const { dataUint8, store, shape } = await fetchSlice({ currentTimeIndex: 0 });
+		const { dataUint8, store, shape } = await fetchSlice({
+			currentTimeIndex: 0,
+			url
+		});
 		// const { voxelSize, volumeSize, boxSize } = await getVoxelAndVolumeSize({ store, shape });
 		await getVoxelAndVolumeSize({ store, shape });
 
 		// Add box container for the data
 		await addVolumetricRenderingContainer({ dataUint8 });
-		fetchAllSlices({ url: 'http://localhost:5173/data/ql.zarr', path: 'ql' });
+		fetchAllSlices({ url, path: 'ql' });
 
 		console.log('⏰ data downloaded and displayed in:', Math.round(performance.now() - timing), 'ms');
 	});
