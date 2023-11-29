@@ -5,6 +5,7 @@ import { openArray } from 'zarr';
 
 
 export const allTimeSlices = writable([]);
+export const currentTimeIndex = writable(0);
 
 export const voxelSize = writable()
 export const volumeSize = writable()

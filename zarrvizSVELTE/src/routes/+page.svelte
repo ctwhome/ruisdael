@@ -1,63 +1,12 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
-	import { get } from 'svelte/store';
 
-	import { makeCloudTransferTex } from '$lib/utils/makeCloudTransferTex';
-	import Vol3dViewer from '$lib/components/3DVolumetric/Volumetric3DViewer.svelte';
 	import TimeLine from '$lib/components/TimeLine.svelte';
-	import { fetchAllData } from '$lib/components/3DVolumetric/LoadZarrData';
 
-	import { dataShape, dataCellSize } from '$lib/components/3DVolumetric/LoadZarrData';
-	import { allTimeSlices } from '$lib/components/VolumetricRenderer/allSlices.store';
+	import { allTimeSlices, currentTimeIndex } from '$lib/components/VolumetricRenderer/allSlices.store';
 
 	import Viewer from '$lib/components/VolumetricRenderer/Viewer.svelte';
 
-	let zarrUrl = 'http://localhost:5173/data/ql.zarr';
-	// let zarrUrl = 'http://localhost:5173/data/unzip/ql.zarr';
 
-	let dataUint8 = null;
-	let playAnimation = false;
-	let playSpeedInMiliseconds = 500;
-
-	// TODO playback interval
-	let interval;
-	let currentTimeIndex = 0;
-
-	function play() {
-		playAnimation = !playAnimation;
-		// TODO This invertal emulates the playback of the data, make it a real playback
-
-		if (playAnimation) {
-			interval = setInterval(() => {
-				// console.log('currentTimeIndex', currentTimeIndex);
-
-				if (get(allTimeSlices)[currentTimeIndex]) {
-					dataUint8 = get(allTimeSlices)[currentTimeIndex];
-					currentTimeIndex = (currentTimeIndex + 1) % get(allTimeSlices).length;
-				}
-			}, playSpeedInMiliseconds);
-		} else {
-			clearInterval(interval);
-		}
-	}
-
-	onMount(() => {
-		console.log('fetching data...');
-		// fetchAllData(zarrUrl, 'ql');
-
-		// // Everytie a new value comes in, update the dataUint8
-		// allTimeSlices.subscribe((val) => {
-		// 	// console.log('---------allTimeSlices', val);
-		// 	console.log('🎹---------- allTimeSlices.subscribe.length', get(allTimeSlices).length);
-		// 	// dataUint8[currentTimeIndex] = get(allTimeSlices)[currentTimeIndex];
-		// 	dataUint8 = get(allTimeSlices)[currentTimeIndex]; // TODO this is not working, how dows the dataUint8 get updated?
-		// 	console.log('🎹 dataUint8?.length', dataUint8?.length);
-		// });
-	});
-
-	onDestroy(() => {
-		clearInterval(interval);
-	});
 </script>
 
 <!--  Debugging info -->
@@ -67,36 +16,21 @@
 	<!-- <pre>Slices downloaded: {@JSON.stringify(allTimeSlices.length, null, 2)}</pre> -->
 	<div class="flex gap-5">
 		<!-- 1073741824 = 1GB -->
-		<pre>dataUint8 (slice) {dataUint8?.length} - {(dataUint8?.byteLength / 1073741824).toFixed(3)} GB |</pre>
-		<pre>dataCellSize: {$dataCellSize.length} |</pre>
+		<pre>dataUint8 (slice) {$allTimeSlices[0]?.length} - {($allTimeSlices[0]?.byteLength / 1073741824).toFixed(
+				3
+			)} GB |</pre>
+		<!-- <pre>dataCellSize: {$dataCellSize.length} |</pre> -->
 		<pre>Slices downloaded: {JSON.stringify($allTimeSlices.length, null, 2)} |</pre>
 	</div>
-	datashape = dataShape: {JSON.stringify($dataShape, null, 2)}
-	<!-- <Vol3dViewer /> -->
+	<!-- datashape = dataShape: {JSON.stringify($dataShape, null, 2)} -->
 </div>
 
-<Viewer {currentTimeIndex} />
+<Viewer {$currentTimeIndex} />
 <TimeLine
-	positionIndex={currentTimeIndex}
+	positionIndex={$currentTimeIndex}
 	length={$allTimeSlices.length}
-	{playAnimation}
-	on:onSelectedIndex={(value) => (currentTimeIndex = value.detail.index)}
-	on:togglePlay={play}
+	on:onSelectedIndex={(value) => currentTimeIndex.set(value.detail.index)}
 />
-
-<div class="flex gap-4 mt-5">
-	Play Speed in miliseconds:
-
-	<input
-		type="number"
-		value={playSpeedInMiliseconds}
-		step="500"
-		min="500"
-		class="w-20"
-		on:input={(event) => (playSpeedInMiliseconds = parseInt(event?.target?.value))}
-	/>
-	currentTimeIndex: {currentTimeIndex}
-</div>
 
 {#if $allTimeSlices.length <= 1}
 	<div>
@@ -105,7 +39,7 @@
 	</div>
 {/if}
 
-<div class="info">
+<div class="info p-6">
 	<!-- <label
 		><input
 			type="checkbox"

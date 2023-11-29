@@ -1,11 +1,10 @@
-import { Queue } from "async-await-queue";
+// import { Queue } from "async-await-queue";
 import { fetchSlice } from "./fetchSlice";
 
 /**
  * Creates a new Queue instance with a concurrency of 1 and a timeout of 5000ms.
  */
 export async function fetchAllSlices({ url = 'http://localhost:5173/data/ql.zarr', path = 'ql' }) {
-  console.log('here we go downloading data...');
   /**
    * Creates a new Queue instance with a concurrency of 1 and a timeout of 5000ms.
    */
@@ -15,7 +14,7 @@ export async function fetchAllSlices({ url = 'http://localhost:5173/data/ql.zarr
 
   console.log('📕 Downloading all slices');
   for (let i = 1; i < 10; ++i) { // start with 1 because 0 was already fetched at mounted
-    const me = Symbol();
+    // const me = Symbol();
     // await q.wait(me, 10 - i);
     try {
 

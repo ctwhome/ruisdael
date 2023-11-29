@@ -26,7 +26,8 @@ export async function fetchSlice({
     timeSlices[currentTimeIndex] = data;
     return timeSlices;
   });
-  // console.log('🎹 ', get(allTimeSlices)[currentTimeIndex]);
+  console.log('🎹 downloaded ', currentTimeIndex);
+  // console.log('🎹 downloaded ', get(allTimeSlices)[currentTimeIndex]);
   return { dataUint8: data, strides, shape, store };
 
 }

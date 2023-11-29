@@ -1,15 +1,38 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher, onDestroy } from 'svelte';
+	import { get } from 'svelte/store';
+	import { allTimeSlices, currentTimeIndex } from './VolumetricRenderer/allSlices.store';
 	export let playAnimation = false;
 	export let length = 10;
 	export let positionIndex = 0;
 
 	const dispatch = createEventDispatcher();
+	let interval;
+	export let playSpeedInMiliseconds = 500;
+	function play() {
+		playAnimation = !playAnimation;
+		// TODO This invertal emulates the playback of the data, make it a real playback
+
+		if (playAnimation) {
+			interval = setInterval(() => {
+				if (get(allTimeSlices)[get(currentTimeIndex)]) {
+					const next = (get(currentTimeIndex) + 1) % get(allTimeSlices).length;
+					currentTimeIndex.set(next);
+				}
+			}, playSpeedInMiliseconds);
+		} else {
+			clearInterval(interval);
+		}
+	}
+
+	onDestroy(() => {
+		clearInterval(interval);
+	});
 </script>
 
 <div class="flex gap-4 mt-10 items-center px-5">
 	<!--  Play icon -->
-	<button class="btn" class:btn-primary={playAnimation} on:click={() => dispatch('togglePlay')}>
+	<button class="btn" class:btn-primary={playAnimation} on:click={() => play()}>
 		{#if !playAnimation}
 			<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
 				<path
@@ -50,4 +73,17 @@
 			{/each}
 		</div>
 	</div>
+</div>
+<div class="flex gap-4 mt-5 p-6">
+	Play Speed in miliseconds:
+
+	<input
+		type="number"
+		value={playSpeedInMiliseconds}
+		step="500"
+		min="500"
+		class="w-20"
+		on:input={(event) => (playSpeedInMiliseconds = parseInt(event?.target?.value))}
+	/>
+	currentTimeIndex: {$currentTimeIndex}
 </div>

@@ -1,14 +1,20 @@
 <script lang="ts">
-	import { afterUpdate, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 	import * as THREE from 'three';
 	import CameraControls from 'camera-controls';
 	import vertexShaderVolume from '$lib/shaders/volume.vert';
 	import fragmentShaderVolume from '$lib/shaders/volume.frag';
 	import { makeCloudTransferTex } from '$lib/utils/makeCloudTransferTex';
-	import { getBoxSize } from '$lib/utils/Utils';
 	import { fetchSlice } from './fetchSlice';
 	import { fetchAllSlices } from './fetchAllSlices';
-	import { allTimeSlices, getVoxelAndVolumeSize, voxelSize, volumeSize, boxSize } from './allSlices.store';
+	import {
+		allTimeSlices,
+		getVoxelAndVolumeSize,
+		voxelSize,
+		volumeSize,
+		boxSize,
+		currentTimeIndex
+	} from './allSlices.store';
 	import { get } from 'svelte/store';
 
 	// import examplePoints from '$lib/components/3DVolumetric/examplePoints';
@@ -16,7 +22,6 @@
 	CameraControls.install({ THREE: THREE });
 	// Other variables and refs
 
-	export let currentTimeIndex = 0;
 	// let dataUint8: Uint8Array = new Uint8Array(0);
 	// let voxelSize: number[]; // = //[100, 100, 37.46];
 	// let volumeSize: number[]; // = //[1536, 1536, 123];
@@ -254,7 +259,6 @@
 
 		updateMaterial({ dataUint8 });
 		// renderScene();
-		// initMaterial({ dataUint8, volumeSize, boxSize });
 	}
 
 	onMount(async () => {
@@ -269,7 +273,7 @@
 
 		const timing = performance.now();
 		// Download first slice of the data and calculate the voxel and volume size. It runs only once.
-		const { dataUint8, store, shape } = await fetchSlice({ currentTimeIndex });
+		const { dataUint8, store, shape } = await fetchSlice({ currentTimeIndex: 0 });
 		// const { voxelSize, volumeSize, boxSize } = await getVoxelAndVolumeSize({ store, shape });
 		await getVoxelAndVolumeSize({ store, shape });
 
@@ -279,9 +283,10 @@
 
 		console.log('⏰ data downloaded and displayed in:', Math.round(performance.now() - timing), 'ms');
 	});
-	afterUpdate(() => {
-		// console.log('🎹 updated index', get(allTimeSlices)[currentTimeIndex]);
-		const dataUint8 = get(allTimeSlices)[currentTimeIndex];
+
+	// Update the material when the currentTimeIndex changes
+	currentTimeIndex.subscribe((index) => {
+		const dataUint8 = get(allTimeSlices)[index];
 		if (dataUint8) {
 			updateMaterial({ dataUint8 });
 		}
