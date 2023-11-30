@@ -48,5 +48,5 @@
     {/each}
   </ul>
 
-  <p class="mt-4"><a href="https://github.com/dimfeld/svelte-maplibre">Github</a></p>
+  <p class="mt-4"><a target="_blank" href="https://github.com/ctwhome/ruisdael">Github</a></p>
 </div>

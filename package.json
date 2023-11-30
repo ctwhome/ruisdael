@@ -44,10 +44,14 @@
   "types": "./dist/index.d.ts",
   "type": "module",
   "dependencies": {
+    "@types/three": "^0.158.1",
+    "async-await-queue": "^2.1.4",
     "d3-geo": "^3.1.0",
     "just-compare": "^2.3.0",
     "just-flush": "^2.3.0",
-    "maplibre-gl": "3.0.0-pre.4"
+    "maplibre-gl": "3.0.0-pre.4",
+    "three": "^0.157.0",
+    "zarr": "^0.6.2"
   },
   "peerDependencies": {
     "@deck.gl/core": "^8.9.4",
